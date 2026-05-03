@@ -686,7 +686,7 @@ body {
   <div class="search-wrap" style="padding:0 0 16px;">
     <div class="search-box">
       <span style="font-size:15px;opacity:.4">🔍</span>
-      <span class="search-placeholder">Parc, atelier, apéro, ciné…</span>
+      <span class="search-placeholder">Parc, jeux, apéro, baignade…</span>
     </div>
   </div>
 </div>
@@ -695,11 +695,11 @@ body {
 <div class="filters" id="filters">
   <button class="filter-btn active" data-cat="all" onclick="filterCat(this,'all')">Tout</button>
   <button class="filter-btn" data-cat="jeux_ext" onclick="filterCat(this,'jeux_ext')">🌳 Jeux extérieur</button>
-  <button class="filter-btn" data-cat="jeux_int" onclick="filterCat(this,'jeux_int')">🎪 Jeux intérieur</button>
-  <button class="filter-btn" data-cat="culture" onclick="filterCat(this,'culture')">🎭 Culture</button>
+  <button class="filter-btn" data-cat="jeux_int" onclick="filterCat(this,'jeux_int')">🎲 Jeux intérieur</button>
+  <button class="filter-btn" data-cat="culture" onclick="filterCat(this,'culture')">🎭 Culture & biblio</button>
   <button class="filter-btn" data-cat="apero" onclick="filterCat(this,'apero')">🍷 Apéro parents</button>
-  <button class="filter-btn" data-cat="resto" onclick="filterCat(this,'resto')">🍕 Restos kids</button>
-  <button class="filter-btn" data-cat="biblio" onclick="filterCat(this,'biblio')">📚 Biblio</button>
+  <button class="filter-btn" data-cat="resto" onclick="filterCat(this,'resto')">🍕 Resto kids</button>
+  <button class="filter-btn" data-cat="eau" onclick="filterCat(this,'eau')">🌊 Au bord de l'eau</button>
   <button class="filter-btn filter-btn-more" id="btn-more-filters" onclick="toggleMoreFilters()">⚙️ Filtres</button>
 </div>
 
@@ -909,7 +909,7 @@ body {
         <div class="choice-btn-icon" style="background:#E8F4EF">📍</div>
         <div class="choice-btn-info">
           <div class="choice-btn-title">Un lieu</div>
-          <div class="choice-btn-sub">Parc, resto, biblio, indoor…</div>
+          <div class="choice-btn-sub">Parc, jeux, restos, plages…</div>
         </div>
         <div class="choice-btn-arrow">→</div>
       </div>
@@ -917,7 +917,7 @@ body {
         <div class="choice-btn-icon" style="background:#FDF3E7">🎉</div>
         <div class="choice-btn-info">
           <div class="choice-btn-title">Un événement</div>
-          <div class="choice-btn-sub">Atelier, spectacle, sortie…</div>
+          <div class="choice-btn-sub">Spectacle, fête, sortie…</div>
         </div>
         <div class="choice-btn-arrow">→</div>
       </div>
@@ -963,12 +963,11 @@ body {
         <label class="form-label">Type d'activité</label>
         <div class="form-cats">
           <div class="form-cat" onclick="toggleAddTag(this)">🌳 Jeux extérieur</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎪 Jeux intérieur</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎲 Jeux intérieur</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture & biblio</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🍷 Apéro parents</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🍕 Resto kids</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">📚 Biblio</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎨 Atelier</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🌊 Au bord de l'eau</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🎭 Spectacle</div>
         </div>
       </div>
@@ -1050,12 +1049,12 @@ body {
       <div class="form-group">
         <label class="form-label">Type d'activité</label>
         <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Outdoor</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Jeux extérieur</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture & biblio</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🍷 Apéro parents</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎨 Atelier</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🎭 Spectacle</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🎬 Ciné</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🌊 Au bord de l'eau</div>
         </div>
       </div>
       <div class="form-group">
@@ -1098,7 +1097,7 @@ body {
     </div>
 
     <!-- Entête lieu -->
-    <div class="detail-img" id="detail-img">🎪</div>
+    <div class="detail-img" id="detail-img">📍</div>
     <div class="detail-cat" id="detail-cat"></div>
     <div class="detail-name" id="detail-name"></div>
     <div class="detail-meta" id="detail-meta"></div>
@@ -1209,12 +1208,12 @@ body {
 const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
 
 const CATEGORIES = {
-  jeux_ext:  { label:'Jeux extérieur', emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
-  jeux_int:  { label:'Jeux intérieur', emoji:'🎪', color:'#EEF0F8', textColor:'#3B4F8C' },
-  culture:   { label:'Culture',        emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
-  apero:     { label:'Apéro parents',  emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
-  resto:     { label:'Resto kids',     emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
-  biblio:    { label:'Bibliothèque',   emoji:'📚', color:'#E6F1FB', textColor:'#185FA5' },
+  jeux_ext:  { label:'Jeux extérieur',  emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
+  jeux_int:  { label:'Jeux intérieur',  emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
+  culture:   { label:'Culture & biblio',emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
+  apero:     { label:'Apéro parents',   emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
+  resto:     { label:'Resto kids',      emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
+  eau:       { label:"Au bord de l'eau", emoji:'🌊', color:'#E6F1FB', textColor:'#185FA5' },
 };
 
 let leafletMap = null;
@@ -1255,14 +1254,27 @@ function initLeafletMap() {
   const staticPlaces = [
     { name:'Jardin Public', cat:'jeux_ext', lat:44.8475, lng:-0.5796, addr:'Cours de Verdun', rating:'⭐ 4.7' },
     { name:'Parc Bordelais', cat:'jeux_ext', lat:44.8558, lng:-0.5979, addr:'Rue du Bocage', rating:'⭐ 4.8' },
-    { name:'Cap Sciences', cat:'culture', lat:44.8621, lng:-0.5512, addr:'Hangar 20, Bordeaux', rating:'⭐ 4.5' },
-    { name:'Médiathèque Mériadeck', cat:'biblio', lat:44.8378, lng:-0.5842, addr:'Rue Mériadeck', rating:'⭐ 4.3' },
-    { name:'Utopia Cinéma', cat:'culture', lat:44.8355, lng:-0.5738, addr:'Sainte-Croix', rating:'⭐ 4.6' },
-    { name:'Darwin Ecosystème', cat:'apero', lat:44.8310, lng:-0.5540, addr:'Bâtiment Darwin, Bastide', rating:'⭐ 4.5' },
-    { name:'Le Milk', cat:'resto', lat:44.8400, lng:-0.5710, addr:'Rue du Palais Gallien', rating:'⭐ 4.4' },
     { name:'Parc de la Chêneraie', cat:'jeux_ext', lat:44.8220, lng:-0.6020, addr:'Gradignan', rating:'⭐ 4.6' },
+    { name:'Parc Rivière', cat:'jeux_ext', lat:44.8640, lng:-0.5990, addr:'Le Bouscat', rating:'⭐ 4.5' },
+    { name:'Aire de jeux Bacalan', cat:'jeux_ext', lat:44.8680, lng:-0.5540, addr:'Bacalan', rating:'⭐ 4.2' },
+    { name:'Plaine des sports de Caudéran', cat:'jeux_ext', lat:44.8520, lng:-0.6070, addr:'Caudéran', rating:'⭐ 4.3' },
+    { name:'Cap Sciences', cat:'culture', lat:44.8621, lng:-0.5512, addr:'Hangar 20', rating:'⭐ 4.5' },
+    { name:'Utopia Cinéma', cat:'culture', lat:44.8355, lng:-0.5738, addr:'Sainte-Croix', rating:'⭐ 4.6' },
+    { name:'Musée d\'Aquitaine', cat:'culture', lat:44.8380, lng:-0.5720, addr:'Cours Pasteur', rating:'⭐ 4.4' },
+    { name:'Médiathèque Mériadeck', cat:'culture', lat:44.8378, lng:-0.5842, addr:'Rue Mériadeck', rating:'⭐ 4.3' },
+    { name:'Bibliothèque Chartrons', cat:'culture', lat:44.8500, lng:-0.5700, addr:'Chartrons', rating:'⭐ 4.4' },
+    { name:'Ludothèque Carabouille', cat:'jeux_int', lat:44.8410, lng:-0.5780, addr:'Saint-Michel', rating:'⭐ 4.6' },
     { name:'La Manufacture', cat:'jeux_int', lat:44.8490, lng:-0.5620, addr:'Rue Carle Vernet', rating:'⭐ 4.3' },
-    { name:'Café du Musée', cat:'apero', lat:44.8414, lng:-0.5721, addr:'Musée d\'Aquitaine', rating:'⭐ 4.2' },
+    { name:'Jump In Bordeaux', cat:'jeux_int', lat:44.8700, lng:-0.5300, addr:'Zone Commerciale', rating:'⭐ 4.4' },
+    { name:'Laser Game Bordeaux', cat:'jeux_int', lat:44.8410, lng:-0.5650, addr:'Centre-ville', rating:'⭐ 4.2' },
+    { name:'Darwin Ecosystème', cat:'apero', lat:44.8310, lng:-0.5540, addr:'Bâtiment Darwin', rating:'⭐ 4.5' },
+    { name:'Café du Musée', cat:'apero', lat:44.8414, lng:-0.5721, addr:'Cours Pasteur', rating:'⭐ 4.2' },
+    { name:'Le Milk', cat:'resto', lat:44.8400, lng:-0.5710, addr:'Rue Palais Gallien', rating:'⭐ 4.4' },
+    { name:'Piscine Judaïque', cat:'eau', lat:44.8460, lng:-0.5890, addr:'Rue Judaïque', rating:'⭐ 4.1' },
+    { name:'Piscine du Lac', cat:'eau', lat:44.8820, lng:-0.5760, addr:'Bordeaux Lac', rating:'⭐ 4.3' },
+    { name:'Plage du Lac de Bordeaux', cat:'eau', lat:44.8850, lng:-0.5730, addr:'Bordeaux Lac', rating:'⭐ 4.5' },
+    { name:'Base nautique de Carcans', cat:'eau', lat:45.0800, lng:-1.0800, addr:'Carcans-Maubuisson', rating:'⭐ 4.7' },
+    { name:'Plage de Lacanau Océan', cat:'eau', lat:44.9800, lng:-1.1900, addr:'Lacanau-Océan', rating:'⭐ 4.6' },
   ];
 
   allPlaces = staticPlaces;
@@ -1277,7 +1289,7 @@ function addLeafletMarkers(places) {
   const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
 
   filtered.forEach(p => {
-    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    const cat = CATEGORIES[p.cat] || CATEGORIES.jeux_ext;
     const icon = L.divIcon({
       className: '',
       html: `<div style="
@@ -1314,12 +1326,15 @@ window.onGoogleReady = function() {
   const bordeaux = new google.maps.LatLng(44.8378, -0.5792);
 
   const queries = [
-    { cat:'outdoor', query:'parc enfants Bordeaux' },
-    { cat:'indoor',  query:'parc indoor enfants Bordeaux' },
-    { cat:'culture', query:'musée cinéma Bordeaux' },
-    { cat:'apero',   query:'bar terrasse famille Bordeaux' },
-    { cat:'resto',   query:'restaurant enfants Bordeaux' },
-    { cat:'biblio',  query:'bibliothèque Bordeaux' },
+    { cat:'jeux_ext', query:'parc jeux enfants aire de jeux Bordeaux' },
+    { cat:'jeux_ext', query:'parc jardin Bordeaux enfants' },
+    { cat:'jeux_int', query:'ludothèque jeux intérieur enfants Bordeaux' },
+    { cat:'jeux_int', query:'parc indoor trampoline Bordeaux' },
+    { cat:'culture',  query:'musée cinéma théâtre Bordeaux' },
+    { cat:'culture',  query:'médiathèque bibliothèque Bordeaux' },
+    { cat:'apero',    query:'bar terrasse famille kids friendly Bordeaux' },
+    { cat:'resto',    query:'restaurant enfants famille Bordeaux' },
+    { cat:'eau',  query:'piscine aquatique enfants Bordeaux' },
   ];
 
   let done = 0;
@@ -1367,7 +1382,7 @@ function renderPlaceCards(places) {
   }
 
   container.innerHTML = filtered.slice(0, 12).map((p, i) => {
-    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    const cat = CATEGORIES[p.cat] || CATEGORIES.jeux_ext;
     return `
     <div class="place-card fade-in" style="animation-delay:${i*.05}s"
       onclick="showPlaceDetail('${escStr(p.name)}','${p.cat}','${escStr(p.addr||'')}','${p.rating||''}')">
@@ -1434,7 +1449,7 @@ function showAdminList() {
   const container = document.getElementById('admin-places-list');
   const places = [
     ...allPlaces,
-    { name:'Parc Bordelais', cat:'outdoor', addr:'Rue du Bocage' },
+    { name:'Parc Bordelais', cat:'jeux_ext', addr:'Rue du Bocage' },
     { name:'Cap Sciences', cat:'culture', addr:'Hangar 20' },
     { name:'Darwin Ecosystème', cat:'apero', addr:'Bastide' },
     { name:'Le Milk', cat:'resto', addr:'Rue du Palais Gallien' },
@@ -1443,7 +1458,7 @@ function showAdminList() {
   container.innerHTML = places.map(p => {
     const id = p.name.toLowerCase().replace(/\s+/g,'-');
     const override = placeOverrides[id];
-    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    const cat = CATEGORIES[p.cat] || CATEGORIES.jeux_ext;
     return `<div class="admin-place-item" onclick="openAdminEdit('${escStr(p.name)}','${id}')">
       <div class="admin-place-name">${cat.emoji} ${p.name}</div>
       <div class="admin-place-desc">${override?.desc || 'Aucune description personnalisée — cliquer pour ajouter'}</div>
@@ -1510,7 +1525,7 @@ function showPlaceDetail(name, cat, addr, rating) {
   document.getElementById('review-name').value = '';
   document.getElementById('review-text').value = '';
 
-  const catData = CATEGORIES[cat] || CATEGORIES.outdoor;
+  const catData = CATEGORIES[cat] || CATEGORIES.jeux_ext;
   document.getElementById('detail-img').style.background =
     `linear-gradient(135deg,${catData.textColor}44,${catData.textColor}88)`;
   document.getElementById('detail-img').textContent = catData.emoji;
@@ -1533,8 +1548,8 @@ function openDetail(id) {
   const details = {
     event1:  { emoji:'🎨', cat:'culture', name:'Atelier poterie parents-enfants', addr:'Bacalan', rating:'⭐ 4.8', desc:'Atelier créatif parents-enfants. Venez modeler ensemble !' },
     event2:  { emoji:'🎬', cat:'culture', name:'Cinéma plein air — Le Roi Lion', addr:'Parc Bordelais', rating:'', desc:'Projection en plein air gratuite. Apportez vos plaids !' },
-    event3:  { emoji:'🌿', cat:'outdoor', name:'Balade contée en forêt', addr:'Forêt du Bourgailh', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin.' },
-    crush1:  { emoji:'🌳', cat:'outdoor', name:'Parc Bordelais', addr:'Rue du Bocage, Bordeaux', rating:'⭐ 4.8', desc:'Le plus grand parc de Bordeaux. Lac, poneys, aire de jeux XXL, pelouses immenses. Le rendez-vous incontournable des familles bordelaises le week-end.' },
+    event3:  { emoji:'🌿', cat:'jeux_ext', name:'Balade contée en forêt', addr:'Forêt du Bourgailh', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin.' },
+    crush1:  { emoji:'🌳', cat:'jeux_ext', name:'Parc Bordelais', addr:'Rue du Bocage, Bordeaux', rating:'⭐ 4.8', desc:'Le plus grand parc de Bordeaux. Lac, poneys, aire de jeux XXL, pelouses immenses. Le rendez-vous incontournable des familles bordelaises le week-end.' },
     crush2:  { emoji:'🔬', cat:'culture', name:'Cap Sciences', addr:'Hangar 20, Quai de Bacalan', rating:'⭐ 4.5', desc:'Musée des sciences et technologies interactif sur les quais de Bordeaux. Expositions permanentes et temporaires, idéal dès 4 ans.' },
     crush3:  { emoji:'🍷', cat:'apero', name:'Darwin Ecosystème', addr:'Bâtiment Darwin, Bastide', rating:'⭐ 4.5', desc:'L\'écosystème urbain de Bordeaux : terrasse géante, food trucks, skatepark. Le lieu parfait pour un apéro en famille où les enfants ont largement de quoi s\'occuper.' },
     crush4:  { emoji:'🍕', cat:'resto', name:'Le Milk', addr:'Rue du Palais Gallien', rating:'⭐ 4.4', desc:'Burgers généreux dans un cadre décontracté. Chaises hautes disponibles, espace kids, menu enfant. Parents et enfants ressortent heureux.' },
@@ -1773,7 +1788,7 @@ function submitNewPlace() {
 
   allPlaces.push({
     name: addSelectedPlace.name,
-    cat: 'outdoor',
+    cat: 'jeux_ext',
     lat: addSelectedPlace.lat || 44.8378,
     lng: addSelectedPlace.lng || -0.5792,
     addr: addSelectedPlace.addr.split(',')[0],

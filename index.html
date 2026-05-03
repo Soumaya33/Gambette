@@ -378,6 +378,10 @@ body {
   border-radius:20px; overflow:hidden;
   height:220px; margin-bottom:24px;
   box-shadow:0 4px 20px rgba(28,28,26,.1);
+  position:relative; z-index:1;
+}
+.leaflet-control-zoom { z-index:2 !important; }
+.modal-open .leaflet-control-zoom { display:none !important; }
 }
 #map { width:100%; height:100%; }
 .map-placeholder {
@@ -689,8 +693,8 @@ body {
 <!-- FILTRES CATÉGORIE -->
 <div class="filters" id="filters">
   <button class="filter-btn active" data-cat="all" onclick="filterCat(this,'all')">Tout</button>
-  <button class="filter-btn" data-cat="outdoor" onclick="filterCat(this,'outdoor')">🌳 Outdoor</button>
-  <button class="filter-btn" data-cat="indoor" onclick="filterCat(this,'indoor')">🏠 Indoor</button>
+  <button class="filter-btn" data-cat="jeux_ext" onclick="filterCat(this,'jeux_ext')">🌳 Jeux extérieur</button>
+  <button class="filter-btn" data-cat="jeux_int" onclick="filterCat(this,'jeux_int')">🎪 Jeux intérieur</button>
   <button class="filter-btn" data-cat="culture" onclick="filterCat(this,'culture')">🎭 Culture</button>
   <button class="filter-btn" data-cat="apero" onclick="filterCat(this,'apero')">🍷 Apéro parents</button>
   <button class="filter-btn" data-cat="resto" onclick="filterCat(this,'resto')">🍕 Restos kids</button>
@@ -957,8 +961,8 @@ body {
       <div class="form-group">
         <label class="form-label">Type d'activité</label>
         <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Outdoor</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🏠 Indoor</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Jeux extérieur</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎪 Jeux intérieur</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🍷 Apéro parents</div>
           <div class="form-cat" onclick="toggleAddTag(this)">🍕 Resto kids</div>
@@ -1204,12 +1208,12 @@ body {
 const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
 
 const CATEGORIES = {
-  outdoor: { label:'Outdoor',        emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
-  indoor:  { label:'Indoor',         emoji:'🏠', color:'#EEF0F8', textColor:'#3B4F8C' },
-  culture: { label:'Culture',        emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
-  apero:   { label:'Apéro parents',  emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
-  resto:   { label:'Restos kids',    emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
-  biblio:  { label:'Bibliothèque',   emoji:'📚', color:'#E6F1FB', textColor:'#185FA5' },
+  jeux_ext:  { label:'Jeux extérieur', emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
+  jeux_int:  { label:'Jeux intérieur', emoji:'🎪', color:'#EEF0F8', textColor:'#3B4F8C' },
+  culture:   { label:'Culture',        emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
+  apero:     { label:'Apéro parents',  emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
+  resto:     { label:'Resto kids',     emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
+  biblio:    { label:'Bibliothèque',   emoji:'📚', color:'#E6F1FB', textColor:'#185FA5' },
 };
 
 let leafletMap = null;
@@ -1244,15 +1248,15 @@ function initLeafletMap() {
 
   // Marqueurs statiques Bordeaux kids-friendly pour démo immédiate
   const staticPlaces = [
-    { name:'Jardin Public', cat:'outdoor', lat:44.8475, lng:-0.5796, addr:'Cours de Verdun', rating:'⭐ 4.7' },
-    { name:'Parc Bordelais', cat:'outdoor', lat:44.8558, lng:-0.5979, addr:'Rue du Bocage', rating:'⭐ 4.8' },
+    { name:'Jardin Public', cat:'jeux_ext', lat:44.8475, lng:-0.5796, addr:'Cours de Verdun', rating:'⭐ 4.7' },
+    { name:'Parc Bordelais', cat:'jeux_ext', lat:44.8558, lng:-0.5979, addr:'Rue du Bocage', rating:'⭐ 4.8' },
     { name:'Cap Sciences', cat:'culture', lat:44.8621, lng:-0.5512, addr:'Hangar 20, Bordeaux', rating:'⭐ 4.5' },
     { name:'Médiathèque Mériadeck', cat:'biblio', lat:44.8378, lng:-0.5842, addr:'Rue Mériadeck', rating:'⭐ 4.3' },
     { name:'Utopia Cinéma', cat:'culture', lat:44.8355, lng:-0.5738, addr:'Sainte-Croix', rating:'⭐ 4.6' },
     { name:'Darwin Ecosystème', cat:'apero', lat:44.8310, lng:-0.5540, addr:'Bâtiment Darwin, Bastide', rating:'⭐ 4.5' },
     { name:'Le Milk', cat:'resto', lat:44.8400, lng:-0.5710, addr:'Rue du Palais Gallien', rating:'⭐ 4.4' },
-    { name:'Parc de la Chêneraie', cat:'outdoor', lat:44.8220, lng:-0.6020, addr:'Gradignan', rating:'⭐ 4.6' },
-    { name:'La Manufacture', cat:'indoor', lat:44.8490, lng:-0.5620, addr:'Rue Carle Vernet', rating:'⭐ 4.3' },
+    { name:'Parc de la Chêneraie', cat:'jeux_ext', lat:44.8220, lng:-0.6020, addr:'Gradignan', rating:'⭐ 4.6' },
+    { name:'La Manufacture', cat:'jeux_int', lat:44.8490, lng:-0.5620, addr:'Rue Carle Vernet', rating:'⭐ 4.3' },
     { name:'Café du Musée', cat:'apero', lat:44.8414, lng:-0.5721, addr:'Musée d\'Aquitaine', rating:'⭐ 4.2' },
   ];
 
@@ -1784,10 +1788,26 @@ function submitNewPlace() {
   }, 2000);
 }
 
-function closeModal(e, id) {
-  if (e.target === document.getElementById(id))
-    document.getElementById(id).classList.remove('open');
+function closeModalById(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.classList.remove('modal-open');
 }
+function closeModal(e, id) {
+  if (e.target === document.getElementById(id)) {
+    document.getElementById(id).classList.remove('open');
+    document.body.classList.remove('modal-open');
+  }
+}
+
+// Ajoute modal-open au body à chaque ouverture de modal
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  const observer = new MutationObserver(() => {
+    const anyOpen = document.querySelector('.modal-overlay.open');
+    document.body.classList.toggle('modal-open', !!anyOpen);
+  });
+  observer.observe(m, { attributes:true, attributeFilter:['class'] });
+});
+
 function openMap() {
   document.getElementById('map-container').scrollIntoView({ behavior:'smooth' });
   setTimeout(() => leafletMap && leafletMap.invalidateSize(), 300);

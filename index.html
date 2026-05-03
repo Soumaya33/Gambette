@@ -8,6 +8,8 @@
 <meta name="theme-color" content="#1E3A2F">
 <title>Gambette — Sorties à Bordeaux</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --forest: #1E3A2F;
@@ -499,12 +501,8 @@ body {
     <div class="sec-title">Carte</div>
     <button class="sec-link" onclick="openMap()">Plein écran →</button>
   </div>
-  <div id="map-container" style="display:none">
+  <div id="map-container">
     <div id="map"></div>
-  </div>
-  <div class="map-placeholder" id="map-placeholder">
-    <div style="font-size:28px;animation:bounce 1.5s ease-in-out infinite">📍</div>
-    <div style="font-size:12px;font-weight:300;color:var(--forest);opacity:.7">Chargement de la carte…</div>
   </div>
 
   <!-- NEAR ME -->
@@ -651,160 +649,175 @@ body {
   </div>
 </div>
 
-<!-- Google Maps -->
 <script>
 const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
 
-// ── DATA CATEGORIES ──
 const CATEGORIES = {
-  outdoor: { label:'Outdoor', emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56',
-    types:['park','campground'], keywords:['parc','jardin','plein air'] },
-  indoor:  { label:'Indoor',  emoji:'🏠', color:'#EEF0F8', textColor:'#3B4F8C',
-    types:['amusement_park','bowling_alley'], keywords:['parc indoor','trampoline','jeux couverts'] },
-  culture: { label:'Culture', emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6',
-    types:['museum','library','movie_theater','art_gallery'], keywords:['musée','cinéma','théâtre'] },
-  apero:   { label:'Apéro parents', emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B',
-    types:['bar','cafe'], keywords:['bar kids friendly','terrasse famille','darwin bordeaux'] },
-  resto:   { label:'Restos kids', emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D',
-    types:['restaurant'], keywords:['restaurant kids friendly bordeaux','family restaurant'] },
-  biblio:  { label:'Bibliothèque', emoji:'📚', color:'#E6F1FB', textColor:'#185FA5',
-    types:['library'], keywords:['bibliothèque bordeaux','médiathèque'] },
+  outdoor: { label:'Outdoor',        emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
+  indoor:  { label:'Indoor',         emoji:'🏠', color:'#EEF0F8', textColor:'#3B4F8C' },
+  culture: { label:'Culture',        emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
+  apero:   { label:'Apéro parents',  emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
+  resto:   { label:'Restos kids',    emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
+  biblio:  { label:'Bibliothèque',   emoji:'📚', color:'#E6F1FB', textColor:'#185FA5' },
 };
 
-// ── STATE ──
-let map = null;
-let markers = [];
+let leafletMap = null;
+let leafletMarkers = [];
 let allPlaces = [];
 let currentCat = 'all';
 
 // ── SPLASH ──
-setTimeout(() => {
-  document.getElementById('splash').classList.add('out');
-  setTimeout(() => document.getElementById('splash').style.display='none', 600);
-  initApp();
-}, 1800);
-
-// ── INIT ──
-function initApp() {
-  loadGoogleMaps();
+function startApp() {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('out');
+    setTimeout(() => document.getElementById('splash').style.display='none', 600);
+    initLeafletMap();
+    loadPlacesViaAPI();
+  }, 1800);
 }
 
-function loadGoogleMaps() {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
+}
+
+// ── LEAFLET MAP (OpenStreetMap, 100% gratuit) ──
+function initLeafletMap() {
+  leafletMap = L.map('map', { zoomControl: true, attributionControl: false })
+    .setView([44.8378, -0.5792], 13);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19
+  }).addTo(leafletMap);
+
+  // Marqueurs statiques Bordeaux kids-friendly pour démo immédiate
+  const staticPlaces = [
+    { name:'Jardin Public', cat:'outdoor', lat:44.8475, lng:-0.5796, addr:'Cours de Verdun', rating:'⭐ 4.7' },
+    { name:'Parc Bordelais', cat:'outdoor', lat:44.8558, lng:-0.5979, addr:'Rue du Bocage', rating:'⭐ 4.8' },
+    { name:'Cap Sciences', cat:'culture', lat:44.8621, lng:-0.5512, addr:'Hangar 20, Bordeaux', rating:'⭐ 4.5' },
+    { name:'Médiathèque Mériadeck', cat:'biblio', lat:44.8378, lng:-0.5842, addr:'Rue Mériadeck', rating:'⭐ 4.3' },
+    { name:'Utopia Cinéma', cat:'culture', lat:44.8355, lng:-0.5738, addr:'Sainte-Croix', rating:'⭐ 4.6' },
+    { name:'Darwin Ecosystème', cat:'apero', lat:44.8310, lng:-0.5540, addr:'Bâtiment Darwin, Bastide', rating:'⭐ 4.5' },
+    { name:'Le Milk', cat:'resto', lat:44.8400, lng:-0.5710, addr:'Rue du Palais Gallien', rating:'⭐ 4.4' },
+    { name:'Parc de la Chêneraie', cat:'outdoor', lat:44.8220, lng:-0.6020, addr:'Gradignan', rating:'⭐ 4.6' },
+    { name:'La Manufacture', cat:'indoor', lat:44.8490, lng:-0.5620, addr:'Rue Carle Vernet', rating:'⭐ 4.3' },
+    { name:'Café du Musée', cat:'apero', lat:44.8414, lng:-0.5721, addr:'Musée d\'Aquitaine', rating:'⭐ 4.2' },
+  ];
+
+  allPlaces = staticPlaces;
+  renderPlaceCards(allPlaces);
+  addLeafletMarkers(allPlaces);
+}
+
+function addLeafletMarkers(places) {
+  leafletMarkers.forEach(m => leafletMap.removeLayer(m));
+  leafletMarkers = [];
+
+  const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
+
+  filtered.forEach(p => {
+    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        background:${cat.textColor};
+        width:36px;height:36px;border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 3px 10px rgba(0,0,0,0.25);
+        border:2px solid white;
+      "><span style="transform:rotate(45deg);font-size:16px">${cat.emoji}</span></div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+    });
+
+    const marker = L.marker([p.lat, p.lng], { icon })
+      .addTo(leafletMap)
+      .on('click', () => showPlaceDetail(p.name, p.cat, p.addr, p.rating));
+
+    leafletMarkers.push(marker);
+  });
+}
+
+// ── GOOGLE PLACES (pour enrichir les cartes) ──
+function loadPlacesViaAPI() {
   const s = document.createElement('script');
-  s.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=onMapsReady`;
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=onGoogleReady`;
   s.async = true; s.defer = true;
-  s.onerror = () => showMapError();
   document.head.appendChild(s);
 }
 
-window.onMapsReady = function() {
-  initMap();
-  loadAllPlaces();
-};
-
-function initMap() {
-  const bordeaux = { lat: 44.8378, lng: -0.5792 };
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: bordeaux,
-    zoom: 13,
-    disableDefaultUI: true,
-    zoomControl: true,
-    styles: [
-      { featureType:'all', elementType:'geometry', stylers:[{color:'#f2ede4'}] },
-      { featureType:'water', elementType:'geometry', stylers:[{color:'#c9dde8'}] },
-      { featureType:'road', elementType:'geometry', stylers:[{color:'#ffffff'}] },
-      { featureType:'road.arterial', elementType:'geometry', stylers:[{color:'#ede8df'}] },
-      { featureType:'park', elementType:'geometry', stylers:[{color:'#d4e8d0'}] },
-      { featureType:'transit', elementType:'geometry', stylers:[{color:'#e0dbd2'}] },
-      { featureType:'administrative', elementType:'geometry.stroke', stylers:[{color:'#c9c3b8'}] },
-      { elementType:'labels.text.fill', stylers:[{color:'#4a4540'}] },
-      { elementType:'labels.text.stroke', stylers:[{color:'#f2ede4'},{weight:2}] },
-      { featureType:'poi', elementType:'labels', stylers:[{visibility:'off'}] },
-    ]
-  });
-  document.getElementById('map-container').style.display = 'block';
-  document.getElementById('map-placeholder').style.display = 'none';
-}
-
-// ── LOAD PLACES ──
-async function loadAllPlaces() {
+window.onGoogleReady = function() {
+  const dummy = document.createElement('div');
+  const service = new google.maps.places.PlacesService(dummy);
   const bordeaux = new google.maps.LatLng(44.8378, -0.5792);
-  const service = new google.maps.places.PlacesService(document.getElementById('map'));
 
   const queries = [
-    { cat:'outdoor', query:'parc jardins Bordeaux', type:'park' },
-    { cat:'outdoor', query:'aire de jeux Bordeaux', type:'park' },
-    { cat:'indoor',  query:'parc indoor enfants Bordeaux', type:'amusement_park' },
-    { cat:'culture', query:'musée Bordeaux', type:'museum' },
-    { cat:'culture', query:'cinéma Bordeaux', type:'movie_theater' },
-    { cat:'apero',   query:'bar terrasse famille kids friendly Bordeaux', type:'bar' },
-    { cat:'resto',   query:'restaurant famille enfants Bordeaux', type:'restaurant' },
-    { cat:'biblio',  query:'bibliothèque médiathèque Bordeaux', type:'library' },
+    { cat:'outdoor', query:'parc enfants Bordeaux' },
+    { cat:'indoor',  query:'parc indoor enfants Bordeaux' },
+    { cat:'culture', query:'musée cinéma Bordeaux' },
+    { cat:'apero',   query:'bar terrasse famille Bordeaux' },
+    { cat:'resto',   query:'restaurant enfants Bordeaux' },
+    { cat:'biblio',  query:'bibliothèque Bordeaux' },
   ];
 
-  const allResults = [];
+  let done = 0;
+  const enriched = [...allPlaces];
 
-  for (const q of queries) {
-    try {
-      const results = await searchPlaces(service, bordeaux, q.query);
-      results.forEach(p => {
-        if (!allResults.find(r => r.place_id === p.place_id)) {
-          allResults.push({ ...p, cat: q.cat });
+  queries.forEach(q => {
+    service.textSearch({ query: q.query, location: bordeaux, radius: 8000 },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          results.slice(0, 4).forEach(p => {
+            if (!enriched.find(e => e.name === p.name)) {
+              enriched.push({
+                name: p.name,
+                cat: q.cat,
+                lat: p.geometry.location.lat(),
+                lng: p.geometry.location.lng(),
+                addr: p.vicinity ? p.vicinity.split(',')[0] : 'Bordeaux',
+                rating: p.rating ? `⭐ ${p.rating.toFixed(1)}` : '',
+              });
+            }
+          });
         }
-      });
-    } catch(e) {}
-    await delay(200);
-  }
-
-  allPlaces = allResults;
-  renderPlaceCards(allPlaces);
-  addMapMarkers(allPlaces);
-}
-
-function searchPlaces(service, location, query) {
-  return new Promise((res, rej) => {
-    service.textSearch({
-      query: query,
-      location: location,
-      radius: 8000,
-    }, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK) {
-        res(results.slice(0, 5));
-      } else {
-        res([]);
+        done++;
+        if (done === queries.length) {
+          allPlaces = enriched;
+          renderPlaceCards(allPlaces);
+          addLeafletMarkers(allPlaces);
+        }
       }
-    });
+    );
   });
-}
+};
 
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ── RENDER PLACE CARDS ──
+// ── RENDER CARDS ──
 function renderPlaceCards(places) {
   const container = document.getElementById('places-scroll');
   const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="loading-card" style="width:280px;flex-shrink:0">
+    container.innerHTML = `<div class="loading-card" style="width:260px;flex-shrink:0">
       <div style="font-size:28px">🔍</div>
-      <div class="loading-text">Aucun lieu trouvé pour cette catégorie</div>
+      <div class="loading-text">Aucun lieu pour cette catégorie</div>
     </div>`;
     return;
   }
 
-  container.innerHTML = filtered.slice(0, 10).map((p, i) => {
+  container.innerHTML = filtered.slice(0, 12).map((p, i) => {
     const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
-    const rating = p.rating ? `⭐ ${p.rating.toFixed(1)}` : '';
-    const addr = p.vicinity ? p.vicinity.split(',')[0] : '';
     return `
-    <div class="place-card fade-in" style="animation-delay:${i*.06}s" onclick="showPlaceDetail('${p.place_id}','${escStr(p.name)}','${p.cat}','${escStr(addr)}','${rating}')">
+    <div class="place-card fade-in" style="animation-delay:${i*.05}s"
+      onclick="showPlaceDetail('${escStr(p.name)}','${p.cat}','${escStr(p.addr||'')}','${p.rating||''}')">
       <div class="place-card-img" style="background:${cat.color}">${cat.emoji}</div>
       <div class="place-card-body">
         <div class="place-card-cat" style="color:${cat.textColor}">${cat.label}</div>
         <div class="place-card-name">${truncate(p.name, 24)}</div>
         <div class="place-card-footer">
-          <span class="place-card-dist">${addr ? truncate(addr,16) : 'Bordeaux'}</span>
-          ${rating ? `<span class="tag tag-free">${rating}</span>` : ''}
+          <span class="place-card-dist">${truncate(p.addr||'Bordeaux', 16)}</span>
+          ${p.rating ? `<span class="tag tag-free">${p.rating}</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -812,42 +825,7 @@ function renderPlaceCards(places) {
 }
 
 function escStr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
-function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : s; }
-
-// ── MAP MARKERS ──
-function addMapMarkers(places) {
-  markers.forEach(m => m.setMap(null));
-  markers = [];
-
-  const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
-
-  filtered.forEach(p => {
-    if (!p.geometry) return;
-    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
-    const marker = new google.maps.Marker({
-      position: p.geometry.location,
-      map: map,
-      title: p.name,
-      icon: {
-        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">
-            <ellipse cx="18" cy="39" rx="7" ry="3" fill="rgba(0,0,0,0.15)"/>
-            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 24 18 24S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${cat.textColor}"/>
-            <text x="18" y="23" text-anchor="middle" font-size="16">${cat.emoji}</text>
-          </svg>`
-        )}`,
-        scaledSize: new google.maps.Size(32, 38),
-        anchor: new google.maps.Point(16, 38),
-      }
-    });
-    marker.addListener('click', () => {
-      const addr = p.vicinity ? p.vicinity.split(',')[0] : '';
-      const rating = p.rating ? `⭐ ${p.rating.toFixed(1)}` : '';
-      showPlaceDetail(p.place_id, p.name, p.cat, addr, rating);
-    });
-    markers.push(marker);
-  });
-}
+function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : (s||''); }
 
 // ── FILTER ──
 function filterCat(btn, cat) {
@@ -855,14 +833,14 @@ function filterCat(btn, cat) {
   btn.classList.add('active');
   currentCat = cat;
   renderPlaceCards(allPlaces);
-  addMapMarkers(allPlaces);
+  addLeafletMarkers(allPlaces);
 }
 
 // ── DETAIL ──
-function showPlaceDetail(placeId, name, cat, addr, rating) {
+function showPlaceDetail(name, cat, addr, rating) {
   const catData = CATEGORIES[cat] || CATEGORIES.outdoor;
   document.getElementById('detail-img').style.background =
-    `linear-gradient(135deg, ${catData.textColor}33, ${catData.textColor}66)`;
+    `linear-gradient(135deg,${catData.textColor}44,${catData.textColor}88)`;
   document.getElementById('detail-img').textContent = catData.emoji;
   document.getElementById('detail-cat').textContent = catData.label;
   document.getElementById('detail-name').textContent = name;
@@ -878,47 +856,27 @@ function showPlaceDetail(placeId, name, cat, addr, rating) {
 
 function openDetail(id) {
   const details = {
-    featured: { emoji:'🎪', cat:'🎭 Spectacle', name:'Festival Chahuts', addr:'Bordeaux Centre', rating:'', desc:'Festival de théâtre de rue pour toute la famille. Spectacles gratuits dans les quartiers de Bordeaux.' },
-    event1:   { emoji:'🎨', cat:'🎨 Atelier', name:'Atelier poterie parents-enfants', addr:'Bacalan', rating:'⭐ 4.8', desc:'Atelier créatif parents-enfants. Venez modeler ensemble ! Tout le matériel est fourni.' },
-    event2:   { emoji:'🎬', cat:'🎬 Cinéma', name:'Cinéma plein air — Le Roi Lion', addr:'Parc Bordelais', rating:'', desc:'Projection en plein air gratuite. Apportez vos plaids et votre pique-nique !' },
-    event3:   { emoji:'🌿', cat:'🌿 Nature', name:'Balade contée en forêt', addr:'Forêt du Bourgailh, Pessac', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin. Chaussures de marche recommandées.' },
+    featured: { emoji:'🎪', cat:'culture', name:'Festival Chahuts', addr:'Bordeaux Centre', rating:'', desc:'Festival de théâtre de rue pour toute la famille. Spectacles gratuits dans les quartiers de Bordeaux.' },
+    event1:   { emoji:'🎨', cat:'culture', name:'Atelier poterie parents-enfants', addr:'Bacalan', rating:'⭐ 4.8', desc:'Atelier créatif parents-enfants. Venez modeler ensemble !' },
+    event2:   { emoji:'🎬', cat:'culture', name:'Cinéma plein air — Le Roi Lion', addr:'Parc Bordelais', rating:'', desc:'Projection en plein air gratuite. Apportez vos plaids !' },
+    event3:   { emoji:'🌿', cat:'outdoor', name:'Balade contée en forêt', addr:'Forêt du Bourgailh', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin.' },
   };
   const d = details[id];
   if (!d) return;
-  document.getElementById('detail-img').style.background = 'linear-gradient(135deg,#3D6B57,#2D5241)';
-  document.getElementById('detail-img').textContent = d.emoji;
-  document.getElementById('detail-cat').textContent = d.cat;
-  document.getElementById('detail-name').textContent = d.name;
-  document.getElementById('detail-meta').innerHTML = [
-    `<div class="detail-meta-item">📍 ${d.addr}</div>`,
-    d.rating ? `<div class="detail-meta-item">${d.rating}</div>` : '',
-    `<div class="detail-meta-item">👶 Kids friendly</div>`,
-  ].join('');
+  showPlaceDetail(d.name, d.cat, d.addr, d.rating);
   document.getElementById('detail-desc').textContent = d.desc;
-  document.getElementById('detail-modal').classList.add('open');
-}
-
-// ── MAP ERROR ──
-function showMapError() {
-  document.getElementById('map-placeholder').innerHTML = `
-    <div style="text-align:center;padding:20px">
-      <div style="font-size:28px;margin-bottom:10px">🗺️</div>
-      <div style="font-size:13px;font-weight:500;color:var(--forest)">Carte indisponible</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Vérifiez la clé API Google Maps</div>
-    </div>`;
+  document.getElementById('detail-img').textContent = d.emoji;
 }
 
 // ── MODALS ──
-function openAddModal() {
-  document.getElementById('add-modal').classList.add('open');
-}
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
 function closeModal(e, id) {
-  if (e.target === document.getElementById(id)) {
+  if (e.target === document.getElementById(id))
     document.getElementById(id).classList.remove('open');
-  }
 }
 function openMap() {
   document.getElementById('map-container').scrollIntoView({ behavior:'smooth' });
+  setTimeout(() => leafletMap && leafletMap.invalidateSize(), 300);
 }
 
 // ── NAV ──

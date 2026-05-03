@@ -133,7 +133,80 @@ body {
   display:flex; gap:0; padding:0 22px 22px;
   overflow-x:auto; scrollbar-width:none;
 }
-.filters::-webkit-scrollbar{display:none}
+.filters-sub {
+  background:rgba(30,58,47,.85);
+  padding-top:0 !important;
+}
+.filter-btn-sub {
+  flex-shrink:0;
+  padding:6px 13px; margin-right:7px;
+  border-radius:30px; border:1.5px solid rgba(246,241,233,.15);
+  background:transparent;
+  font-family:'DM Sans',sans-serif;
+  font-size:11px; font-weight:500;
+  color:rgba(246,241,233,.5);
+  cursor:pointer; white-space:nowrap;
+  transition:all .2s;
+}
+.filter-btn-sub.active {
+  background:rgba(246,241,233,.15);
+  border-color:rgba(246,241,233,.4);
+  color:rgba(246,241,233,.9);
+}
+.filter-btn-more {
+  background:rgba(246,241,233,.12) !important;
+  border-color:rgba(246,241,233,.3) !important;
+  color:rgba(246,241,233,.8) !important;
+}
+.filter-btn-more.open {
+  background:var(--terracotta) !important;
+  border-color:var(--terracotta) !important;
+  color:white !important;
+}
+
+/* ── ADMIN PANEL ── */
+.admin-overlay {
+  position:fixed; inset:0;
+  background:rgba(26,26,24,.7);
+  backdrop-filter:blur(6px);
+  z-index:300; display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s;
+}
+.admin-overlay.open { opacity:1; pointer-events:all; }
+.admin-panel {
+  width:100%; max-width:430px; margin:0 auto;
+  background:var(--white); border-radius:24px 24px 0 0;
+  padding:0 22px 48px; max-height:92vh; overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.admin-overlay.open .admin-panel { transform:translateY(0); }
+.admin-login { text-align:center; padding:8px 0 16px; }
+.admin-login-icon { font-size:40px; margin-bottom:12px; }
+.admin-login-title { font-family:'Fraunces',serif; font-size:22px; font-weight:600; margin-bottom:6px; }
+.admin-login-sub { font-size:13px; font-weight:300; color:var(--muted); margin-bottom:22px; }
+.admin-place-item {
+  background:var(--cream); border-radius:14px;
+  padding:14px 15px; margin-bottom:10px; cursor:pointer;
+  transition:background .15s;
+}
+.admin-place-item:active { background:var(--cream2); }
+.admin-place-name { font-size:14px; font-weight:500; color:var(--charcoal); margin-bottom:3px; }
+.admin-place-desc { font-size:12px; font-weight:300; color:var(--muted); line-height:1.4; }
+.admin-edit-form { background:var(--cream); border-radius:16px; padding:16px; margin-top:4px; }
+.admin-back {
+  display:flex; align-items:center; gap:8px;
+  font-size:13px; font-weight:500; color:var(--terracotta);
+  cursor:pointer; margin-bottom:16px; background:none; border:none;
+  font-family:'DM Sans',sans-serif; padding:0;
+}
+.admin-badge {
+  display:inline-block; background:var(--terracotta);
+  color:white; font-size:10px; font-weight:500;
+  padding:3px 10px; border-radius:20px; letter-spacing:.5px;
+  margin-bottom:16px;
+}
 .filter-btn {
   flex-shrink:0;
   padding:8px 15px; margin-right:8px;
@@ -421,6 +494,19 @@ body {
 .fade-in{animation:fadeIn .4s ease forwards}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── REVIEWS ── */
+.star-picker { display:flex; gap:6px; }
+.star { font-size:28px; cursor:pointer; color:var(--sand); transition:color .15s, transform .15s; user-select:none; }
+.star.active { color:var(--gold); }
+.star:active { transform:scale(1.2); }
+.review-item { background:var(--white); border-radius:14px; padding:13px 14px; margin-bottom:8px; }
+.review-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+.review-author { font-size:13px; font-weight:500; color:var(--charcoal); }
+.review-stars { font-size:12px; letter-spacing:1px; }
+.review-date { font-size:10px; color:var(--muted); margin-bottom:6px; }
+.review-text { font-size:13px; font-weight:300; color:var(--charcoal); line-height:1.5; }
+.review-empty { text-align:center; padding:20px; font-size:13px; font-weight:300; color:var(--muted); }
+
 /* CATEGORY COLOR THEMES */
 .cat-outdoor{background:#E8F4EF}
 .cat-indoor{background:#EEF0F8}
@@ -428,6 +514,74 @@ body {
 .cat-resto{background:#FBE9E7}
 .cat-apero{background:#FDF3E7}
 .cat-biblio{background:#E6F1FB}
+
+/* ── DETAIL MODAL OVERRIDES ── */
+.detail-modal-inner {
+  max-height: 60vh !important;
+  overflow-y: auto;
+  padding-bottom: 32px !important;
+}
+.detail-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 14px 0 4px;
+}
+.detail-close {
+  position: absolute;
+  right: 0; top: 10px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--cream2);
+  border: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s;
+}
+.detail-close:active { background: var(--sand); }
+.detail-modal-inner .modal-handle {
+  margin: 0;
+}
+.crush-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px; }
+.crush-card {
+  background:var(--white); border-radius:18px; overflow:hidden;
+  cursor:pointer; box-shadow:0 2px 14px rgba(28,28,26,.07);
+  transition:transform .2s;
+}
+.crush-card:active { transform:scale(.97); }
+.crush-img {
+  height:100px; display:flex; align-items:center; justify-content:center;
+  font-size:36px; position:relative;
+}
+.crush-badge {
+  position:absolute; bottom:8px; left:8px;
+  background:rgba(0,0,0,.35); color:white;
+  font-size:9px; font-weight:500; letter-spacing:.8px;
+  text-transform:uppercase; padding:3px 8px; border-radius:10px;
+  backdrop-filter:blur(4px);
+}
+.crush-body { padding:11px 12px 13px; }
+.crush-label {
+  font-size:9px; font-weight:500; letter-spacing:1px;
+  text-transform:uppercase; color:var(--gold); margin-bottom:3px;
+}
+.crush-name {
+  font-family:'Fraunces',serif; font-size:14px; font-weight:600;
+  color:var(--charcoal); line-height:1.2; margin-bottom:5px;
+}
+.crush-desc {
+  font-size:11px; font-weight:300; color:var(--muted);
+  line-height:1.45; margin-bottom:8px;
+}
+.crush-footer { display:flex; gap:5px; flex-wrap:wrap; }
+.crush-tag {
+  font-size:9px; font-weight:500; padding:3px 7px;
+  border-radius:10px; background:var(--cream2); color:var(--charcoal);
+}
 </style>
 </head>
 <body>
@@ -449,11 +603,11 @@ body {
     <div class="logo">Gam<em>bette</em></div>
     <div class="header-actions">
       <div class="btn-icon" onclick="openAddModal()">＋</div>
-      <div class="btn-icon">👤</div>
+      <div class="btn-icon" onclick="openAdmin()">👤</div>
     </div>
   </div>
   <div class="header-city">📍 Bordeaux Métropole</div>
-  <div class="header-title">Où sortir <strong>ce week-end ?</strong></div>
+  <div class="header-title">Où sortir <strong>avec les enfants ?</strong></div>
   <div class="search-wrap" style="padding:0 0 16px;">
     <div class="search-box">
       <span style="font-size:15px;opacity:.4">🔍</span>
@@ -462,7 +616,7 @@ body {
   </div>
 </div>
 
-<!-- FILTERS -->
+<!-- FILTRES CATÉGORIE -->
 <div class="filters" id="filters">
   <button class="filter-btn active" data-cat="all" onclick="filterCat(this,'all')">Tout</button>
   <button class="filter-btn" data-cat="outdoor" onclick="filterCat(this,'outdoor')">🌳 Outdoor</button>
@@ -471,33 +625,36 @@ body {
   <button class="filter-btn" data-cat="apero" onclick="filterCat(this,'apero')">🍷 Apéro parents</button>
   <button class="filter-btn" data-cat="resto" onclick="filterCat(this,'resto')">🍕 Restos kids</button>
   <button class="filter-btn" data-cat="biblio" onclick="filterCat(this,'biblio')">📚 Biblio</button>
+  <button class="filter-btn filter-btn-more" id="btn-more-filters" onclick="toggleMoreFilters()">⚙️ Filtres</button>
+</div>
+
+<!-- FILTRES AVANCÉS (masqués par défaut) -->
+<div id="advanced-filters" style="display:none;background:var(--forest);padding:0 0 4px">
+  <div style="padding:10px 22px 4px;font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:rgba(246,241,233,.35)">Moment</div>
+  <div class="filters filters-sub" id="filters-moment" style="padding-top:0;padding-bottom:8px">
+    <button class="filter-btn-sub active" data-moment="all" onclick="filterMoment(this,'all')">Tous</button>
+    <button class="filter-btn-sub" data-moment="weekend" onclick="filterMoment(this,'weekend')">📅 Week-end</button>
+    <button class="filter-btn-sub" data-moment="semaine" onclick="filterMoment(this,'semaine')">📆 En semaine</button>
+    <button class="filter-btn-sub" data-moment="matin" onclick="filterMoment(this,'matin')">🌅 Matin</button>
+    <button class="filter-btn-sub" data-moment="midi" onclick="filterMoment(this,'midi')">☀️ Midi</button>
+    <button class="filter-btn-sub" data-moment="soir" onclick="filterMoment(this,'soir')">🌙 Soir</button>
+  </div>
+  <div style="padding:4px 22px 4px;font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:rgba(246,241,233,.35)">Âge</div>
+  <div class="filters filters-sub" id="filters-age" style="padding-top:0;padding-bottom:18px">
+    <button class="filter-btn-sub active" data-age="all" onclick="filterAge(this,'all')">Tous</button>
+    <button class="filter-btn-sub" data-age="0-2" onclick="filterAge(this,'0-2')">👶 0–2 ans</button>
+    <button class="filter-btn-sub" data-age="3-5" onclick="filterAge(this,'3-5')">🧒 3–5 ans</button>
+    <button class="filter-btn-sub" data-age="6-10" onclick="filterAge(this,'6-10')">🧑 6–10 ans</button>
+    <button class="filter-btn-sub" data-age="10+" onclick="filterAge(this,'10+')">👦 10+ ans</button>
+    <button class="filter-btn-sub" data-age="tout" onclick="filterAge(this,'tout')">👨‍👩‍👧 Tout âge</button>
+  </div>
 </div>
 
 <!-- BODY -->
 <div class="body">
 
-  <!-- FEATURED -->
-  <div class="sec-hd">
-    <div class="sec-title">À la une</div>
-  </div>
-  <div class="featured fade-in" onclick="openDetail('featured')">
-    <div class="featured-img">
-      <span class="featured-emoji">🎪</span>
-      <div class="featured-badge">✨ Événement</div>
-    </div>
-    <div class="featured-body">
-      <div class="featured-cat">🎭 Spectacle jeune public</div>
-      <div class="featured-name">Festival Chahuts — Scènes enfants</div>
-      <div class="featured-meta">
-        <div class="featured-meta-item">📅 15–22 juin 2025</div>
-        <div class="featured-meta-item">🎟️ Dès 3 ans</div>
-        <div class="featured-meta-item">💚 Gratuit</div>
-      </div>
-    </div>
-  </div>
-
   <!-- MAP -->
-  <div class="sec-hd">
+  <div class="sec-hd" style="margin-top:0">
     <div class="sec-title">Carte</div>
     <button class="sec-link" onclick="openMap()">Plein écran →</button>
   </div>
@@ -506,7 +663,7 @@ body {
   </div>
 
   <!-- NEAR ME -->
-  <div class="sec-hd" style="margin-top:4px">
+  <div class="sec-hd" style="margin-top:20px">
     <div class="sec-title">Près de chez toi</div>
     <button class="sec-link">Voir tout →</button>
   </div>
@@ -517,8 +674,76 @@ body {
     </div>
   </div>
 
+  <!-- COUPS DE COEUR -->
+  <div class="sec-hd" style="margin-top:28px">
+    <div class="sec-title">💛 Nos coups de cœur</div>
+    <button class="sec-link">Voir tout →</button>
+  </div>
+  <div class="crush-grid">
+    <div class="crush-card" onclick="openDetail('crush1')">
+      <div class="crush-img" style="background:linear-gradient(135deg,#3D6B57,#1E3A2F)">
+        <span>🌳</span>
+        <div class="crush-badge">Outdoor</div>
+      </div>
+      <div class="crush-body">
+        <div class="crush-label">Le choix de la rédac'</div>
+        <div class="crush-name">Parc Bordelais</div>
+        <div class="crush-desc">Lac, aire de jeux XXL, poneys… Le parc préféré des familles bordelaises.</div>
+        <div class="crush-footer">
+          <span class="crush-tag">🆓 Gratuit</span>
+          <span class="crush-tag">Tout âge</span>
+        </div>
+      </div>
+    </div>
+    <div class="crush-card" onclick="openDetail('crush2')">
+      <div class="crush-img" style="background:linear-gradient(135deg,#7B4FA6,#4a2d6b)">
+        <span>🔬</span>
+        <div class="crush-badge">Culture</div>
+      </div>
+      <div class="crush-body">
+        <div class="crush-label">Incontournable</div>
+        <div class="crush-name">Cap Sciences</div>
+        <div class="crush-desc">Musée des sciences interactif sur les quais. Les enfants adorent.</div>
+        <div class="crush-footer">
+          <span class="crush-tag">⭐ 4.5</span>
+          <span class="crush-tag">Dès 4 ans</span>
+        </div>
+      </div>
+    </div>
+    <div class="crush-card" onclick="openDetail('crush3')">
+      <div class="crush-img" style="background:linear-gradient(135deg,#854F0B,#5a3508)">
+        <span>🍷</span>
+        <div class="crush-badge">Apéro parents</div>
+      </div>
+      <div class="crush-body">
+        <div class="crush-label">Apéro réussi</div>
+        <div class="crush-name">Darwin Ecosystème</div>
+        <div class="crush-desc">Terrasse géante, skatepark pour les kids, food trucks. La totale.</div>
+        <div class="crush-footer">
+          <span class="crush-tag">⭐ 4.5</span>
+          <span class="crush-tag">Kids welcome</span>
+        </div>
+      </div>
+    </div>
+    <div class="crush-card" onclick="openDetail('crush4')">
+      <div class="crush-img" style="background:linear-gradient(135deg,#993C1D,#6b2510)">
+        <span>🍕</span>
+        <div class="crush-badge">Resto kids</div>
+      </div>
+      <div class="crush-body">
+        <div class="crush-label">Testé & approuvé</div>
+        <div class="crush-name">Le Milk</div>
+        <div class="crush-desc">Burgers, chaises hautes, espace kids. Parents et enfants heureux.</div>
+        <div class="crush-footer">
+          <span class="crush-tag">⭐ 4.4</span>
+          <span class="crush-tag">Menu enfant</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- EVENTS -->
-  <div class="sec-hd" style="margin-top:24px">
+  <div class="sec-hd" style="margin-top:28px">
     <div class="sec-title">Cette semaine</div>
     <button class="sec-link">Tout voir →</button>
   </div>
@@ -639,13 +864,114 @@ body {
 
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detail-modal" onclick="closeModal(event,'detail-modal')">
-  <div class="modal" id="detail-content">
+  <div class="modal" style="padding-bottom:40px">
     <div class="modal-handle"></div>
+
+    <!-- Entête lieu -->
     <div class="detail-img" id="detail-img">🎪</div>
-    <div class="detail-cat" id="detail-cat">Catégorie</div>
-    <div class="detail-name" id="detail-name">Nom du lieu</div>
+    <div class="detail-cat" id="detail-cat"></div>
+    <div class="detail-name" id="detail-name"></div>
     <div class="detail-meta" id="detail-meta"></div>
     <div class="detail-desc" id="detail-desc"></div>
+
+    <!-- Avis existants -->
+    <div style="margin-top:22px;margin-bottom:14px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+        <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:600">Avis des parents</div>
+        <div id="review-count" style="font-size:12px;color:var(--muted)"></div>
+      </div>
+      <div id="reviews-list"></div>
+    </div>
+
+    <!-- Formulaire avis -->
+    <div style="background:var(--cream);border-radius:16px;padding:16px;margin-top:4px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:12px">Donner mon avis 💬</div>
+
+      <!-- Étoiles -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Note</div>
+        <div class="star-picker" id="star-picker">
+          <span class="star" data-v="1" onclick="setStar(1)">☆</span>
+          <span class="star" data-v="2" onclick="setStar(2)">☆</span>
+          <span class="star" data-v="3" onclick="setStar(3)">☆</span>
+          <span class="star" data-v="4" onclick="setStar(4)">☆</span>
+          <span class="star" data-v="5" onclick="setStar(5)">☆</span>
+        </div>
+      </div>
+
+      <!-- Prénom -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Ton prénom</div>
+        <input class="form-input" id="review-name" type="text" placeholder="Ex : Marie, Thomas…" style="background:var(--white)">
+      </div>
+
+      <!-- Commentaire -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Ton avis</div>
+        <textarea class="form-input" id="review-text" rows="3"
+          placeholder="Super endroit, on y va souvent avec nos enfants…"
+          style="background:var(--white);resize:none;line-height:1.5"></textarea>
+      </div>
+
+      <button class="btn-submit" onclick="submitReview()">Publier mon avis ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-overlay" id="admin-overlay" onclick="closeAdmin(event)">
+  <div class="admin-panel">
+    <div class="modal-handle"></div>
+
+    <!-- LOGIN -->
+    <div id="admin-login-view">
+      <div class="admin-login">
+        <div class="admin-login-icon">🔐</div>
+        <div class="admin-login-title">Espace gestionnaire</div>
+        <div class="admin-login-sub">Accès réservé à l'équipe Gambette</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" id="admin-password" type="password"
+          placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPassword()">
+      </div>
+      <div id="admin-pw-error" style="display:none;color:var(--terracotta);font-size:12px;margin-bottom:10px;text-align:center">
+        Mot de passe incorrect
+      </div>
+      <button class="btn-submit" onclick="checkAdminPassword()">Accéder 🔓</button>
+    </div>
+
+    <!-- LISTE DES LIEUX -->
+    <div id="admin-list-view" style="display:none">
+      <div class="admin-badge">✏️ Mode édition</div>
+      <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin-bottom:4px">Gérer les lieux</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:18px">Clique sur un lieu pour modifier sa description</div>
+      <div id="admin-places-list"></div>
+    </div>
+
+    <!-- ÉDITION D'UN LIEU -->
+    <div id="admin-edit-view" style="display:none">
+      <button class="admin-back" onclick="showAdminList()">← Retour</button>
+      <div class="admin-badge">✏️ Modification</div>
+      <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin-bottom:16px" id="admin-edit-title"></div>
+      <div class="admin-edit-form">
+        <div class="form-group">
+          <label class="form-label">Label (ex : "Incontournable")</label>
+          <input class="form-input" id="admin-edit-label" type="text" placeholder="Le choix de la rédac'…" style="background:var(--white)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description courte</label>
+          <textarea class="form-input" id="admin-edit-desc" rows="4"
+            placeholder="Description affichée dans la fiche lieu…"
+            style="background:var(--white);resize:none;line-height:1.5"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Âges recommandés</label>
+          <input class="form-input" id="admin-edit-age" type="text" placeholder="Ex : Dès 4 ans, Tout âge…" style="background:var(--white)">
+        </div>
+        <button class="btn-submit" onclick="saveAdminEdit()" style="margin-top:8px">Enregistrer ✅</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -827,6 +1153,112 @@ function renderPlaceCards(places) {
 function escStr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : (s||''); }
 
+// ── TOGGLE FILTRES AVANCÉS ──
+function toggleMoreFilters() {
+  const panel = document.getElementById('advanced-filters');
+  const btn = document.getElementById('btn-more-filters');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.classList.toggle('open', open);
+  btn.textContent = open ? '✕ Filtres' : '⚙️ Filtres';
+}
+
+// ── ADMIN ──
+const ADMIN_PASSWORD = 'gambette2025';
+let adminEditingId = null;
+const placeOverrides = {}; // { placeId: { label, desc, age } }
+
+function openAdmin() {
+  document.getElementById('admin-overlay').classList.add('open');
+  document.getElementById('admin-login-view').style.display = 'block';
+  document.getElementById('admin-list-view').style.display = 'none';
+  document.getElementById('admin-edit-view').style.display = 'none';
+  document.getElementById('admin-password').value = '';
+  document.getElementById('admin-pw-error').style.display = 'none';
+}
+
+function closeAdmin(e) {
+  if (e.target === document.getElementById('admin-overlay'))
+    document.getElementById('admin-overlay').classList.remove('open');
+}
+
+function checkAdminPassword() {
+  const pw = document.getElementById('admin-password').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('admin-login-view').style.display = 'none';
+    showAdminList();
+  } else {
+    document.getElementById('admin-pw-error').style.display = 'block';
+    document.getElementById('admin-password').value = '';
+  }
+}
+
+function showAdminList() {
+  document.getElementById('admin-edit-view').style.display = 'none';
+  document.getElementById('admin-list-view').style.display = 'block';
+
+  const container = document.getElementById('admin-places-list');
+  const places = [
+    ...allPlaces,
+    { name:'Parc Bordelais', cat:'outdoor', addr:'Rue du Bocage' },
+    { name:'Cap Sciences', cat:'culture', addr:'Hangar 20' },
+    { name:'Darwin Ecosystème', cat:'apero', addr:'Bastide' },
+    { name:'Le Milk', cat:'resto', addr:'Rue du Palais Gallien' },
+  ].filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
+
+  container.innerHTML = places.map(p => {
+    const id = p.name.toLowerCase().replace(/\s+/g,'-');
+    const override = placeOverrides[id];
+    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    return `<div class="admin-place-item" onclick="openAdminEdit('${escStr(p.name)}','${id}')">
+      <div class="admin-place-name">${cat.emoji} ${p.name}</div>
+      <div class="admin-place-desc">${override?.desc || 'Aucune description personnalisée — cliquer pour ajouter'}</div>
+    </div>`;
+  }).join('');
+}
+
+function openAdminEdit(name, id) {
+  adminEditingId = id;
+  document.getElementById('admin-list-view').style.display = 'none';
+  document.getElementById('admin-edit-view').style.display = 'block';
+  document.getElementById('admin-edit-title').textContent = name;
+  const override = placeOverrides[id] || {};
+  document.getElementById('admin-edit-label').value = override.label || '';
+  document.getElementById('admin-edit-desc').value = override.desc || '';
+  document.getElementById('admin-edit-age').value = override.age || '';
+}
+
+function saveAdminEdit() {
+  placeOverrides[adminEditingId] = {
+    label: document.getElementById('admin-edit-label').value.trim(),
+    desc:  document.getElementById('admin-edit-desc').value.trim(),
+    age:   document.getElementById('admin-edit-age').value.trim(),
+  };
+  const btn = document.querySelector('#admin-edit-view .btn-submit');
+  btn.textContent = '✅ Enregistré !';
+  btn.style.background = '#2D5241';
+  setTimeout(() => {
+    btn.textContent = 'Enregistrer ✅';
+    btn.style.background = '';
+    showAdminList();
+  }, 1500);
+}
+let currentAge = 'all';
+
+function filterMoment(btn, moment) {
+  document.querySelectorAll('#filters-moment .filter-btn-sub').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMoment = moment;
+  renderPlaceCards(allPlaces);
+}
+
+function filterAge(btn, age) {
+  document.querySelectorAll('#filters-age .filter-btn-sub').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentAge = age;
+  renderPlaceCards(allPlaces);
+}
+
 // ── FILTER ──
 function filterCat(btn, cat) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -838,6 +1270,12 @@ function filterCat(btn, cat) {
 
 // ── DETAIL ──
 function showPlaceDetail(name, cat, addr, rating) {
+  currentPlaceId = name.toLowerCase().replace(/\s+/g,'-');
+  currentStars = 0;
+  document.querySelectorAll('.star').forEach(s => { s.classList.remove('active'); s.textContent = '☆'; });
+  document.getElementById('review-name').value = '';
+  document.getElementById('review-text').value = '';
+
   const catData = CATEGORIES[cat] || CATEGORIES.outdoor;
   document.getElementById('detail-img').style.background =
     `linear-gradient(135deg,${catData.textColor}44,${catData.textColor}88)`;
@@ -849,17 +1287,23 @@ function showPlaceDetail(name, cat, addr, rating) {
     rating ? `<div class="detail-meta-item">${rating}</div>` : '',
     `<div class="detail-meta-item">👶 Kids friendly</div>`,
   ].join('');
+  const override = placeOverrides[currentPlaceId] || {};
   document.getElementById('detail-desc').textContent =
-    'Lieu sélectionné par la communauté Gambette. Parfait pour une sortie en famille à Bordeaux !';
+    override.desc || 'Lieu sélectionné par la communauté Gambette. Parfait pour une sortie en famille à Bordeaux !';
+
+  renderReviews(currentPlaceId);
   document.getElementById('detail-modal').classList.add('open');
 }
 
 function openDetail(id) {
   const details = {
-    featured: { emoji:'🎪', cat:'culture', name:'Festival Chahuts', addr:'Bordeaux Centre', rating:'', desc:'Festival de théâtre de rue pour toute la famille. Spectacles gratuits dans les quartiers de Bordeaux.' },
-    event1:   { emoji:'🎨', cat:'culture', name:'Atelier poterie parents-enfants', addr:'Bacalan', rating:'⭐ 4.8', desc:'Atelier créatif parents-enfants. Venez modeler ensemble !' },
-    event2:   { emoji:'🎬', cat:'culture', name:'Cinéma plein air — Le Roi Lion', addr:'Parc Bordelais', rating:'', desc:'Projection en plein air gratuite. Apportez vos plaids !' },
-    event3:   { emoji:'🌿', cat:'outdoor', name:'Balade contée en forêt', addr:'Forêt du Bourgailh', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin.' },
+    event1:  { emoji:'🎨', cat:'culture', name:'Atelier poterie parents-enfants', addr:'Bacalan', rating:'⭐ 4.8', desc:'Atelier créatif parents-enfants. Venez modeler ensemble !' },
+    event2:  { emoji:'🎬', cat:'culture', name:'Cinéma plein air — Le Roi Lion', addr:'Parc Bordelais', rating:'', desc:'Projection en plein air gratuite. Apportez vos plaids !' },
+    event3:  { emoji:'🌿', cat:'outdoor', name:'Balade contée en forêt', addr:'Forêt du Bourgailh', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin.' },
+    crush1:  { emoji:'🌳', cat:'outdoor', name:'Parc Bordelais', addr:'Rue du Bocage, Bordeaux', rating:'⭐ 4.8', desc:'Le plus grand parc de Bordeaux. Lac, poneys, aire de jeux XXL, pelouses immenses. Le rendez-vous incontournable des familles bordelaises le week-end.' },
+    crush2:  { emoji:'🔬', cat:'culture', name:'Cap Sciences', addr:'Hangar 20, Quai de Bacalan', rating:'⭐ 4.5', desc:'Musée des sciences et technologies interactif sur les quais de Bordeaux. Expositions permanentes et temporaires, idéal dès 4 ans.' },
+    crush3:  { emoji:'🍷', cat:'apero', name:'Darwin Ecosystème', addr:'Bâtiment Darwin, Bastide', rating:'⭐ 4.5', desc:'L\'écosystème urbain de Bordeaux : terrasse géante, food trucks, skatepark. Le lieu parfait pour un apéro en famille où les enfants ont largement de quoi s\'occuper.' },
+    crush4:  { emoji:'🍕', cat:'resto', name:'Le Milk', addr:'Rue du Palais Gallien', rating:'⭐ 4.4', desc:'Burgers généreux dans un cadre décontracté. Chaises hautes disponibles, espace kids, menu enfant. Parents et enfants ressortent heureux.' },
   };
   const d = details[id];
   if (!d) return;
@@ -868,7 +1312,71 @@ function openDetail(id) {
   document.getElementById('detail-img').textContent = d.emoji;
 }
 
-// ── MODALS ──
+// ── REVIEWS ──
+let currentPlaceId = null;
+let currentStars = 0;
+const reviews = {}; // { placeId: [{author, stars, text, date}] }
+
+function setStar(n) {
+  currentStars = n;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('active', i < n);
+    s.textContent = i < n ? '★' : '☆';
+  });
+}
+
+function renderReviews(placeId) {
+  const list = reviews[placeId] || [];
+  const container = document.getElementById('reviews-list');
+  const count = document.getElementById('review-count');
+  count.textContent = list.length ? `${list.length} avis` : '';
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="review-empty">Sois le premier à laisser un avis ! 🌟</div>`;
+    return;
+  }
+  container.innerHTML = list.map(r => `
+    <div class="review-item">
+      <div class="review-header">
+        <div class="review-author">${r.author}</div>
+        <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+      </div>
+      <div class="review-date">${r.date}</div>
+      <div class="review-text">${r.text}</div>
+    </div>`).join('');
+}
+
+function submitReview() {
+  const name = document.getElementById('review-name').value.trim();
+  const text = document.getElementById('review-text').value.trim();
+
+  if (!currentStars) { alert('Merci de donner une note ⭐'); return; }
+  if (!name) { alert('Merci d\'indiquer ton prénom'); return; }
+  if (!text) { alert('Merci d\'écrire un petit avis'); return; }
+
+  if (!reviews[currentPlaceId]) reviews[currentPlaceId] = [];
+  reviews[currentPlaceId].unshift({
+    author: name,
+    stars: currentStars,
+    text: text,
+    date: new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }),
+  });
+
+  // Reset form
+  document.getElementById('review-name').value = '';
+  document.getElementById('review-text').value = '';
+  setStar(0);
+
+  // Refresh
+  renderReviews(currentPlaceId);
+
+  // Confirmation visuelle
+  const btn = document.querySelector('#detail-modal .btn-submit');
+  const orig = btn.textContent;
+  btn.textContent = '✅ Avis publié, merci !';
+  btn.style.background = '#2D5241';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2500);
+}
 function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
 function closeModal(e, id) {
   if (e.target === document.getElementById(id))

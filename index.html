@@ -380,6 +380,7 @@ body {
   box-shadow:0 4px 20px rgba(28,28,26,.1);
   position:relative; z-index:1;
 }
+#map { width:100%; height:220px; display:block; }
 .leaflet-control-zoom { z-index:2 !important; }
 .modal-open .leaflet-control-zoom { display:none !important; }
 }
@@ -1245,6 +1246,10 @@ function initLeafletMap() {
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19
   }).addTo(leafletMap);
+
+  // Force le recalcul de la taille après rendu
+  setTimeout(() => leafletMap.invalidateSize(), 100);
+  setTimeout(() => leafletMap.invalidateSize(), 500);
 
   // Marqueurs statiques Bordeaux kids-friendly pour démo immédiate
   const staticPlaces = [

@@ -494,7 +494,47 @@ body {
 .fade-in{animation:fadeIn .4s ease forwards}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── REVIEWS ── */
+/* ── PLACE SEARCH ── */
+.place-suggestions {
+  position:absolute; top:100%; left:0; right:0; z-index:50;
+  background:var(--white); border-radius:14px;
+  box-shadow:0 8px 24px rgba(28,28,26,.12);
+  overflow:hidden; margin-top:4px;
+  max-height:220px; overflow-y:auto;
+}
+.place-suggestion-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; cursor:pointer;
+  transition:background .15s;
+  border-bottom:1px solid var(--cream2);
+}
+.place-suggestion-item:last-child { border-bottom:none; }
+.place-suggestion-item:active { background:var(--cream); }
+.place-suggestion-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:var(--cream2); display:flex;
+  align-items:center; justify-content:center;
+  font-size:16px; flex-shrink:0;
+}
+.place-suggestion-name { font-size:13px; font-weight:500; color:var(--charcoal); margin-bottom:2px; }
+.place-suggestion-addr { font-size:11px; font-weight:300; color:var(--muted); }
+.place-suggestion-loading { padding:14px 16px; font-size:13px; color:var(--muted); text-align:center; }
+
+.place-selected-card {
+  display:flex; align-items:center; gap:12px;
+  background:var(--cream); border-radius:14px;
+  padding:13px 14px; margin-bottom:16px;
+  border:1.5px solid var(--forest);
+}
+.place-selected-icon { font-size:26px; flex-shrink:0; }
+.place-selected-info { flex:1; }
+.place-selected-name { font-size:14px; font-weight:500; color:var(--charcoal); margin-bottom:2px; }
+.place-selected-addr { font-size:11px; font-weight:300; color:var(--muted); }
+.place-selected-change {
+  font-size:11px; font-weight:500; color:var(--terracotta);
+  background:none; border:none; cursor:pointer;
+  font-family:'DM Sans',sans-serif; flex-shrink:0;
+}
 .star-picker { display:flex; gap:6px; }
 .star { font-size:28px; cursor:pointer; color:var(--sand); transition:color .15s, transform .15s; user-select:none; }
 .star.active { color:var(--gold); }
@@ -827,38 +867,91 @@ body {
 <div class="modal-overlay" id="add-modal" onclick="closeModal(event,'add-modal')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Ajouter un lieu</div>
-    <div class="modal-sub">Tu connais une pépite à Bordeaux ? Partage-la avec les parents 🙌</div>
-    <div class="form-group">
-      <label class="form-label">Nom du lieu ou événement</label>
-      <input class="form-input" type="text" placeholder="Ex : Parc des Chartrons, L'Atelier Briques…">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Catégorie</label>
-      <div class="form-cats">
-        <div class="form-cat sel" onclick="toggleCat(this)">🌳 Outdoor</div>
-        <div class="form-cat" onclick="toggleCat(this)">🏠 Indoor</div>
-        <div class="form-cat" onclick="toggleCat(this)">🎭 Culture</div>
-        <div class="form-cat" onclick="toggleCat(this)">🍷 Apéro parents</div>
-        <div class="form-cat" onclick="toggleCat(this)">🍕 Resto kids</div>
-        <div class="form-cat" onclick="toggleCat(this)">📚 Biblio</div>
-        <div class="form-cat" onclick="toggleCat(this)">🎨 Atelier</div>
-        <div class="form-cat" onclick="toggleCat(this)">🎭 Spectacle</div>
+    <div class="modal-title">Proposer un lieu</div>
+    <div class="modal-sub">Trouve le lieu sur la carte, puis ajoute quelques infos 🙌</div>
+
+    <!-- ÉTAPE 1 : Recherche lieu -->
+    <div id="add-step1">
+      <div class="form-group" style="position:relative">
+        <label class="form-label">Rechercher le lieu</label>
+        <input class="form-input" id="place-search-input" type="text"
+          placeholder="Ex : Jardin Public, Cap Sciences…"
+          oninput="searchPlacesAutocomplete(this.value)"
+          autocomplete="off">
+        <div id="place-suggestions" class="place-suggestions"></div>
+      </div>
+
+      <!-- Lieu sélectionné -->
+      <div id="place-selected" style="display:none">
+        <div class="place-selected-card">
+          <div class="place-selected-icon" id="sel-icon">📍</div>
+          <div class="place-selected-info">
+            <div class="place-selected-name" id="sel-name"></div>
+            <div class="place-selected-addr" id="sel-addr"></div>
+          </div>
+          <button class="place-selected-change" onclick="resetPlaceSearch()">Changer</button>
+        </div>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Adresse</label>
-      <input class="form-input" type="text" placeholder="Rue, quartier, ville…">
+
+    <!-- ÉTAPE 2 : Tags (visible après sélection) -->
+    <div id="add-step2" style="display:none">
+
+      <div class="form-group">
+        <label class="form-label">Type d'activité</label>
+        <div class="form-cats" id="add-cats">
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🌳 Outdoor</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🏠 Indoor</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🎭 Culture</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🍷 Apéro parents</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🍕 Resto kids</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">📚 Biblio</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🎨 Atelier</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🎭 Spectacle</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Âge recommandé</label>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTag(this,'age')">👶 0–2 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'age')">🧒 3–5 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'age')">🧑 6–10 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'age')">👦 10+ ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'age')">👨‍👩‍👧 Tout âge</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Moment idéal</label>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTag(this,'moment')">📅 Week-end</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'moment')">📆 En semaine</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'moment')">🌅 Matin</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'moment')">☀️ Midi</div>
+          <div class="form-cat" onclick="toggleAddTag(this,'moment')">🌙 Soir</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tarif</label>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTagSingle(this,'tarif')">💚 Gratuit</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this,'tarif')">💰 Payant</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this,'tarif')">🎟️ Sur réservation</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Un mot sur ce lieu (optionnel)</label>
+        <textarea class="form-input" id="add-comment" rows="2"
+          placeholder="Ce qui le rend spécial pour les familles…"
+          style="resize:none;line-height:1.5"></textarea>
+      </div>
+
+      <button class="btn-submit" onclick="submitNewPlace()">Proposer ce lieu ✨</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Âges recommandés</label>
-      <input class="form-input" type="text" placeholder="Ex : 2–8 ans, tout âge…">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Tarif</label>
-      <input class="form-input" type="text" placeholder="Ex : Gratuit, 5€/enfant…">
-    </div>
-    <button class="btn-submit">Proposer ce lieu ✨</button>
+
   </div>
 </div>
 
@@ -1377,7 +1470,111 @@ function submitReview() {
   btn.style.background = '#2D5241';
   setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2500);
 }
-function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+// ── ADD PLACE SEARCH ──
+let addSelectedPlace = null;
+let searchDebounce = null;
+
+function openAddModal() {
+  resetPlaceSearch();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function resetPlaceSearch() {
+  addSelectedPlace = null;
+  document.getElementById('place-search-input').value = '';
+  document.getElementById('place-suggestions').innerHTML = '';
+  document.getElementById('place-suggestions').style.display = 'none';
+  document.getElementById('place-selected').style.display = 'none';
+  document.getElementById('add-step2').style.display = 'none';
+  document.querySelectorAll('#add-modal .form-cat').forEach(c => c.classList.remove('sel'));
+  if (document.getElementById('add-comment')) document.getElementById('add-comment').value = '';
+}
+
+function searchPlacesAutocomplete(val) {
+  clearTimeout(searchDebounce);
+  const box = document.getElementById('place-suggestions');
+  if (!val || val.length < 2) { box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML = '<div class="place-suggestion-loading">Recherche…</div>';
+  box.style.display = 'block';
+  searchDebounce = setTimeout(() => {
+    if (!window.google) {
+      box.innerHTML = '<div class="place-suggestion-loading">Service non disponible</div>';
+      return;
+    }
+    const dummy = document.createElement('div');
+    const svc = new google.maps.places.PlacesService(dummy);
+    svc.textSearch({
+      query: val + ' Bordeaux',
+      location: new google.maps.LatLng(44.8378, -0.5792),
+      radius: 15000,
+    }, (results, status) => {
+      if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+        box.innerHTML = '<div class="place-suggestion-loading">Aucun résultat</div>';
+        return;
+      }
+      window._searchResults = results;
+      box.innerHTML = results.slice(0, 6).map((p, i) => `
+        <div class="place-suggestion-item" onclick="selectPlace(${i})">
+          <div class="place-suggestion-icon">📍</div>
+          <div>
+            <div class="place-suggestion-name">${p.name}</div>
+            <div class="place-suggestion-addr">${(p.formatted_address || p.vicinity || '').split(',').slice(0,2).join(',')}</div>
+          </div>
+        </div>`).join('');
+    });
+  }, 350);
+}
+
+function selectPlace(idx) {
+  const p = window._searchResults?.[idx];
+  if (!p) return;
+  addSelectedPlace = {
+    name: p.name,
+    addr: p.formatted_address || p.vicinity || '',
+    lat: p.geometry?.location?.lat(),
+    lng: p.geometry?.location?.lng(),
+  };
+  document.getElementById('place-search-input').value = '';
+  document.getElementById('place-suggestions').style.display = 'none';
+  document.getElementById('sel-name').textContent = p.name;
+  document.getElementById('sel-addr').textContent = addSelectedPlace.addr.split(',').slice(0,2).join(',');
+  document.getElementById('place-selected').style.display = 'block';
+  document.getElementById('add-step2').style.display = 'block';
+}
+
+function toggleAddTag(el) { el.classList.toggle('sel'); }
+function toggleAddTagSingle(el) {
+  el.closest('.form-cats').querySelectorAll('.form-cat').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function submitNewPlace() {
+  if (!addSelectedPlace) { alert('Merci de sélectionner un lieu'); return; }
+  const cats = [...document.querySelectorAll('#add-modal .form-cat.sel')].map(c => c.textContent.trim());
+  if (!cats.length) { alert('Merci de sélectionner au moins un tag'); return; }
+
+  allPlaces.push({
+    name: addSelectedPlace.name,
+    cat: 'outdoor',
+    lat: addSelectedPlace.lat || 44.8378,
+    lng: addSelectedPlace.lng || -0.5792,
+    addr: addSelectedPlace.addr.split(',')[0],
+    rating: '',
+  });
+  renderPlaceCards(allPlaces);
+  addLeafletMarkers(allPlaces);
+
+  const btn = document.querySelector('#add-modal .btn-submit');
+  btn.textContent = '✅ Lieu proposé, merci !';
+  btn.style.background = '#2D5241';
+  setTimeout(() => {
+    document.getElementById('add-modal').classList.remove('open');
+    btn.textContent = 'Proposer ce lieu ✨';
+    btn.style.background = '';
+    resetPlaceSearch();
+  }, 2000);
+}
+
 function closeModal(e, id) {
   if (e.target === document.getElementById(id))
     document.getElementById(id).classList.remove('open');
@@ -1393,7 +1590,7 @@ function setNav(tab) {
   document.getElementById('nav-'+tab)?.classList.add('active');
 }
 
-// ── FORM CATS ──
+// ── FORM CATS (legacy) ──
 function toggleCat(el) { el.classList.toggle('sel'); }
 </script>
 </body>

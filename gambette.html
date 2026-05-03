@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1E3A2F">
+<title>Gambette — Sorties à Bordeaux</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --forest: #1E3A2F;
+  --forest2: #2D5241;
+  --forest3: #3D6B57;
+  --cream: #F6F1E9;
+  --cream2: #EDE6D8;
+  --sand: #D9CFC0;
+  --terracotta: #C4622D;
+  --terracotta2: #E07A48;
+  --gold: #C9A84C;
+  --gold2: #E8C46A;
+  --charcoal: #1A1A18;
+  --muted: #7A7570;
+  --white: #FDFAF5;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--cream);
+  color:var(--charcoal);
+  max-width:430px;
+  margin:0 auto;
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+
+/* ── SPLASH ── */
+#splash {
+  position:fixed; inset:0; z-index:999;
+  background:var(--forest);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:12px;
+  transition:opacity .5s ease, transform .5s ease;
+}
+#splash.out { opacity:0; transform:translateY(-16px); pointer-events:none; }
+.splash-logo {
+  font-family:'Fraunces',serif;
+  font-size:52px; font-weight:600;
+  color:var(--cream); letter-spacing:-1px; line-height:1;
+}
+.splash-logo em { font-style:italic; font-weight:300; color:var(--gold2); }
+.splash-sub {
+  font-size:12px; font-weight:300; letter-spacing:2.5px;
+  text-transform:uppercase; color:rgba(246,241,233,.45);
+}
+.splash-loader {
+  margin-top:32px; display:flex; gap:6px;
+}
+.splash-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--terracotta);
+  animation:sdot 1.2s ease-in-out infinite;
+}
+.splash-dot:nth-child(2){animation-delay:.2s}
+.splash-dot:nth-child(3){animation-delay:.4s}
+@keyframes sdot{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+
+/* ── HEADER ── */
+#header {
+  background:var(--forest);
+  padding:52px 22px 0;
+  position:relative; overflow:hidden;
+}
+#header::before {
+  content:''; position:absolute;
+  top:-80px; right:-60px;
+  width:240px; height:240px;
+  background:radial-gradient(circle,rgba(201,168,76,.18) 0%,transparent 65%);
+  border-radius:50%;
+}
+.header-top {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+}
+.logo {
+  font-family:'Fraunces',serif;
+  font-size:28px; font-weight:600;
+  color:var(--cream); letter-spacing:-.5px;
+}
+.logo em { font-style:italic; font-weight:300; color:var(--gold2); }
+.header-actions { display:flex; gap:10px; align-items:center; }
+.btn-icon {
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(246,241,233,.1);
+  border:1px solid rgba(246,241,233,.15);
+  cursor:pointer; font-size:17px;
+  transition:background .2s;
+}
+.btn-icon:active{background:rgba(246,241,233,.2)}
+
+.header-city {
+  font-size:12px; font-weight:300; letter-spacing:.3px;
+  color:rgba(246,241,233,.5); margin-bottom:4px;
+}
+.header-title {
+  font-family:'Fraunces',serif;
+  font-size:22px; font-weight:300; font-style:italic;
+  color:var(--cream); margin-bottom:20px;
+}
+.header-title strong{font-style:normal;font-weight:600}
+
+/* ── SEARCH ── */
+.search-wrap { padding:0 22px 16px; background:var(--forest); }
+.search-box {
+  background:rgba(246,241,233,.1);
+  border:1px solid rgba(246,241,233,.15);
+  border-radius:14px;
+  display:flex; align-items:center; gap:10px;
+  padding:13px 16px; cursor:pointer;
+}
+.search-placeholder{font-size:14px;font-weight:300;color:rgba(246,241,233,.45)}
+
+/* ── FILTERS ── */
+.filters {
+  background:var(--forest);
+  display:flex; gap:0; padding:0 22px 22px;
+  overflow-x:auto; scrollbar-width:none;
+}
+.filters::-webkit-scrollbar{display:none}
+.filter-btn {
+  flex-shrink:0;
+  padding:8px 15px; margin-right:8px;
+  border-radius:30px; border:1.5px solid rgba(246,241,233,.2);
+  background:transparent;
+  font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:500;
+  color:rgba(246,241,233,.55);
+  cursor:pointer; white-space:nowrap;
+  transition:all .2s;
+}
+.filter-btn.active {
+  background:var(--cream); border-color:var(--cream);
+  color:var(--forest);
+}
+.filter-btn:not(.active):active{background:rgba(246,241,233,.1)}
+
+/* ── BODY ── */
+.body { padding:22px 22px 100px; }
+
+/* ── SECTION HEADER ── */
+.sec-hd {
+  display:flex; align-items:baseline; justify-content:space-between;
+  margin-bottom:14px;
+}
+.sec-title {
+  font-family:'Fraunces',serif;
+  font-size:20px; font-weight:600; letter-spacing:-.3px;
+}
+.sec-link {
+  font-size:12px; font-weight:500; color:var(--terracotta);
+  cursor:pointer; background:none; border:none;
+  font-family:'DM Sans',sans-serif;
+}
+
+/* ── FEATURED ── */
+.featured {
+  background:var(--forest);
+  border-radius:20px; overflow:hidden;
+  margin-bottom:28px; cursor:pointer;
+  transform:translateY(0);
+  transition:transform .2s;
+}
+.featured:active{transform:translateY(2px)}
+.featured-img {
+  height:190px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:72px; position:relative;
+  background:linear-gradient(135deg,#3D6B57 0%,#2D5241 50%,#1a3028 100%);
+}
+.featured-img::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(to bottom,transparent 40%,rgba(29,44,38,.92) 100%);
+}
+.featured-emoji { position:relative; z-index:1; }
+.featured-badge {
+  position:absolute; top:14px; left:14px; z-index:2;
+  background:var(--gold); color:var(--charcoal);
+  font-size:10px; font-weight:500; letter-spacing:.8px;
+  text-transform:uppercase; padding:4px 10px; border-radius:20px;
+}
+.featured-body { padding:16px 18px 20px; }
+.featured-cat {
+  font-size:10px; font-weight:500; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--gold2); margin-bottom:5px;
+}
+.featured-name {
+  font-family:'Fraunces',serif;
+  font-size:21px; font-weight:600; color:var(--cream);
+  letter-spacing:-.3px; line-height:1.2; margin-bottom:10px;
+}
+.featured-meta { display:flex; flex-wrap:wrap; gap:10px; }
+.featured-meta-item {
+  font-size:11px; font-weight:300;
+  color:rgba(246,241,233,.6); display:flex; align-items:center; gap:4px;
+}
+
+/* ── HORIZONTAL SCROLL ── */
+.hscroll {
+  display:flex; gap:13px; overflow-x:auto;
+  margin:0 -22px; padding:4px 22px 10px;
+  scrollbar-width:none;
+}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ── PLACE CARD ── */
+.place-card {
+  flex-shrink:0; width:162px;
+  background:var(--white); border-radius:16px; overflow:hidden;
+  cursor:pointer; box-shadow:0 2px 14px rgba(28,28,26,.07);
+  transition:transform .2s;
+}
+.place-card:active{transform:scale(.97)}
+.place-card-img {
+  height:104px; display:flex; align-items:center;
+  justify-content:center; font-size:40px;
+}
+.place-card-body { padding:11px 12px 13px; }
+.place-card-cat {
+  font-size:9px; font-weight:500; letter-spacing:1.2px;
+  text-transform:uppercase; margin-bottom:3px;
+}
+.place-card-name {
+  font-family:'Fraunces',serif;
+  font-size:14px; font-weight:600; color:var(--charcoal);
+  line-height:1.2; margin-bottom:7px;
+}
+.place-card-footer {
+  display:flex; align-items:center; justify-content:space-between;
+}
+.place-card-dist{font-size:10px;font-weight:300;color:var(--muted)}
+.tag {
+  font-size:9px; font-weight:500;
+  padding:3px 7px; border-radius:10px;
+}
+.tag-free{background:#E8F4EF;color:#0F6E56}
+.tag-paid{background:#FBE9E7;color:#993C1D}
+
+/* ── EVENTS ── */
+.event {
+  background:var(--white); border-radius:16px;
+  padding:15px; margin-bottom:10px;
+  display:flex; gap:13px; align-items:flex-start;
+  cursor:pointer; box-shadow:0 2px 10px rgba(28,28,26,.05);
+  transition:transform .15s;
+}
+.event:active{transform:scale(.98)}
+.event-date {
+  flex-shrink:0; width:46px; height:52px;
+  background:var(--forest); border-radius:11px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  color:var(--cream);
+}
+.event-day{font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1}
+.event-month{font-size:9px;font-weight:300;letter-spacing:.5px;text-transform:uppercase;opacity:.65}
+.event-info{flex:1}
+.event-name{font-family:'Fraunces',serif;font-size:15px;font-weight:600;line-height:1.2;margin-bottom:3px}
+.event-sub{font-size:11px;font-weight:300;color:var(--muted);margin-bottom:7px}
+.event-tags{display:flex;gap:5px;flex-wrap:wrap}
+.etag{font-size:10px;font-weight:400;padding:3px 8px;border-radius:10px;background:var(--cream2);color:var(--charcoal)}
+
+/* ── LOADING CARD ── */
+.loading-card {
+  background:var(--white); border-radius:16px; padding:24px;
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  margin-bottom:16px; box-shadow:0 2px 10px rgba(28,28,26,.05);
+}
+.loading-spinner {
+  width:28px; height:28px; border-radius:50%;
+  border:2.5px solid var(--sand);
+  border-top-color:var(--forest);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;font-weight:300;color:var(--muted)}
+
+/* ── ERROR CARD ── */
+.error-card {
+  background:var(--white); border-radius:16px; padding:20px;
+  margin-bottom:14px; box-shadow:0 2px 10px rgba(28,28,26,.05);
+  border-left:3px solid var(--terracotta);
+}
+.error-title{font-size:14px;font-weight:500;color:var(--terracotta);margin-bottom:4px}
+.error-desc{font-size:12px;font-weight:300;color:var(--muted);line-height:1.5}
+
+/* ── MAP ── */
+#map-container {
+  border-radius:20px; overflow:hidden;
+  height:220px; margin-bottom:24px;
+  box-shadow:0 4px 20px rgba(28,28,26,.1);
+}
+#map { width:100%; height:100%; }
+.map-placeholder {
+  background:linear-gradient(135deg,#d4e8df 0%,#b8d4c8 100%);
+  height:220px; border-radius:20px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:10px;
+  margin-bottom:24px; position:relative; overflow:hidden;
+}
+.map-pin{font-size:30px;animation:bounce 1.5s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.map-label{font-size:12px;font-weight:300;color:var(--forest);opacity:.7}
+
+/* ── FAB ── */
+#fab {
+  position:fixed; bottom:82px; right:22px;
+  width:54px; height:54px; border-radius:17px;
+  background:var(--terracotta);
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px; font-weight:300; color:white;
+  box-shadow:0 6px 20px rgba(196,98,45,.4);
+  cursor:pointer; z-index:50;
+  transition:transform .2s, box-shadow .2s;
+  border:none;
+}
+#fab:active{transform:scale(.91);box-shadow:0 3px 12px rgba(196,98,45,.3)}
+
+/* ── NAV ── */
+#nav {
+  position:fixed; bottom:0;
+  left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px;
+  background:var(--white);
+  border-top:1px solid rgba(28,28,26,.07);
+  display:flex; padding:9px 0 18px; z-index:100;
+}
+.nav-item {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; gap:3px; cursor:pointer; padding:3px 0;
+}
+.nav-icon{font-size:21px}
+.nav-label{font-size:10px;font-weight:500;letter-spacing:.2px}
+.nav-item.active .nav-label{color:var(--terracotta)}
+.nav-item:not(.active) .nav-label{color:var(--muted)}
+.nav-item:not(.active) .nav-icon{filter:grayscale(1) opacity(.45)}
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0;
+  background:rgba(26,26,24,.65);
+  backdrop-filter:blur(5px);
+  z-index:200; display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal {
+  width:100%; max-width:430px; margin:0 auto;
+  background:var(--white); border-radius:24px 24px 0 0;
+  padding:0 22px 48px; max-height:90vh; overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-handle{width:40px;height:4px;background:var(--sand);border-radius:2px;margin:18px auto 20px}
+.modal-title{font-family:'Fraunces',serif;font-size:23px;font-weight:600;margin-bottom:5px}
+.modal-sub{font-size:13px;font-weight:300;color:var(--muted);margin-bottom:22px;line-height:1.5}
+.form-group{margin-bottom:15px}
+.form-label{font-size:11px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;display:block}
+.form-input{
+  width:100%; background:var(--cream);
+  border:1.5px solid var(--sand); border-radius:12px;
+  padding:12px 15px; font-family:'DM Sans',sans-serif;
+  font-size:14px; color:var(--charcoal); outline:none;
+  transition:border-color .2s;
+}
+.form-input:focus{border-color:var(--forest)}
+.form-cats{display:flex;flex-wrap:wrap;gap:7px}
+.form-cat{
+  padding:8px 13px; border-radius:20px;
+  font-size:12px; background:var(--cream);
+  border:1.5px solid var(--sand); cursor:pointer;
+  color:var(--charcoal); transition:all .15s;
+  font-family:'DM Sans',sans-serif;
+}
+.form-cat.sel{background:var(--forest);border-color:var(--forest);color:var(--cream)}
+.btn-submit{
+  width:100%; background:var(--terracotta);
+  color:white; border:none; border-radius:13px;
+  padding:15px; font-family:'DM Sans',sans-serif;
+  font-size:15px; font-weight:500; cursor:pointer;
+  margin-top:6px; transition:background .2s, transform .15s;
+}
+.btn-submit:active{background:#a8521f;transform:scale(.98)}
+
+/* ── DETAIL MODAL ── */
+.detail-img{
+  height:180px; display:flex; align-items:center;
+  justify-content:center; font-size:64px;
+  background:linear-gradient(135deg,#3D6B57,#2D5241);
+  border-radius:0; margin:0 -22px 18px;
+}
+.detail-cat{font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--terracotta);margin-bottom:5px}
+.detail-name{font-family:'Fraunces',serif;font-size:24px;font-weight:600;margin-bottom:12px;line-height:1.2}
+.detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.detail-meta-item{
+  display:flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:300; color:var(--muted);
+  background:var(--cream); padding:6px 11px; border-radius:20px;
+}
+.detail-desc{font-size:14px;font-weight:300;color:var(--charcoal);line-height:1.6}
+
+/* ── ANIMATIONS ── */
+.fade-in{animation:fadeIn .4s ease forwards}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* CATEGORY COLOR THEMES */
+.cat-outdoor{background:#E8F4EF}
+.cat-indoor{background:#EEF0F8}
+.cat-culture{background:#F3EBF8}
+.cat-resto{background:#FBE9E7}
+.cat-apero{background:#FDF3E7}
+.cat-biblio{background:#E6F1FB}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">Gam<em>bette</em></div>
+  <div class="splash-sub">Bordeaux · Sorties en famille</div>
+  <div class="splash-loader">
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="header-top">
+    <div class="logo">Gam<em>bette</em></div>
+    <div class="header-actions">
+      <div class="btn-icon" onclick="openAddModal()">＋</div>
+      <div class="btn-icon">👤</div>
+    </div>
+  </div>
+  <div class="header-city">📍 Bordeaux Métropole</div>
+  <div class="header-title">Où sortir <strong>ce week-end ?</strong></div>
+  <div class="search-wrap" style="padding:0 0 16px;">
+    <div class="search-box">
+      <span style="font-size:15px;opacity:.4">🔍</span>
+      <span class="search-placeholder">Parc, atelier, apéro, ciné…</span>
+    </div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-cat="all" onclick="filterCat(this,'all')">Tout</button>
+  <button class="filter-btn" data-cat="outdoor" onclick="filterCat(this,'outdoor')">🌳 Outdoor</button>
+  <button class="filter-btn" data-cat="indoor" onclick="filterCat(this,'indoor')">🏠 Indoor</button>
+  <button class="filter-btn" data-cat="culture" onclick="filterCat(this,'culture')">🎭 Culture</button>
+  <button class="filter-btn" data-cat="apero" onclick="filterCat(this,'apero')">🍷 Apéro parents</button>
+  <button class="filter-btn" data-cat="resto" onclick="filterCat(this,'resto')">🍕 Restos kids</button>
+  <button class="filter-btn" data-cat="biblio" onclick="filterCat(this,'biblio')">📚 Biblio</button>
+</div>
+
+<!-- BODY -->
+<div class="body">
+
+  <!-- FEATURED -->
+  <div class="sec-hd">
+    <div class="sec-title">À la une</div>
+  </div>
+  <div class="featured fade-in" onclick="openDetail('featured')">
+    <div class="featured-img">
+      <span class="featured-emoji">🎪</span>
+      <div class="featured-badge">✨ Événement</div>
+    </div>
+    <div class="featured-body">
+      <div class="featured-cat">🎭 Spectacle jeune public</div>
+      <div class="featured-name">Festival Chahuts — Scènes enfants</div>
+      <div class="featured-meta">
+        <div class="featured-meta-item">📅 15–22 juin 2025</div>
+        <div class="featured-meta-item">🎟️ Dès 3 ans</div>
+        <div class="featured-meta-item">💚 Gratuit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="sec-hd">
+    <div class="sec-title">Carte</div>
+    <button class="sec-link" onclick="openMap()">Plein écran →</button>
+  </div>
+  <div id="map-container" style="display:none">
+    <div id="map"></div>
+  </div>
+  <div class="map-placeholder" id="map-placeholder">
+    <div style="font-size:28px;animation:bounce 1.5s ease-in-out infinite">📍</div>
+    <div style="font-size:12px;font-weight:300;color:var(--forest);opacity:.7">Chargement de la carte…</div>
+  </div>
+
+  <!-- NEAR ME -->
+  <div class="sec-hd" style="margin-top:4px">
+    <div class="sec-title">Près de chez toi</div>
+    <button class="sec-link">Voir tout →</button>
+  </div>
+  <div class="hscroll" id="places-scroll">
+    <div class="loading-card" style="width:162px;flex-shrink:0;height:180px;justify-content:center">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="sec-hd" style="margin-top:24px">
+    <div class="sec-title">Cette semaine</div>
+    <button class="sec-link">Tout voir →</button>
+  </div>
+  <div id="events-list">
+    <div class="event fade-in" onclick="openDetail('event1')">
+      <div class="event-date"><div class="event-day">07</div><div class="event-month">Juin</div></div>
+      <div class="event-info">
+        <div class="event-name">Atelier poterie parents-enfants</div>
+        <div class="event-sub">Atelier Argile · Bacalan · 10h–12h</div>
+        <div class="event-tags">
+          <span class="etag">🎨 Créatif</span>
+          <span class="etag">3–10 ans</span>
+          <span class="etag">12€/duo</span>
+        </div>
+      </div>
+    </div>
+    <div class="event fade-in" onclick="openDetail('event2')">
+      <div class="event-date"><div class="event-day">08</div><div class="event-month">Juin</div></div>
+      <div class="event-info">
+        <div class="event-name">Cinéma plein air — Le Roi Lion</div>
+        <div class="event-sub">Parc Bordelais · Dès 20h</div>
+        <div class="event-tags">
+          <span class="etag">🎬 Ciné</span>
+          <span class="etag">Tout âge</span>
+          <span class="etag">💚 Gratuit</span>
+        </div>
+      </div>
+    </div>
+    <div class="event fade-in" onclick="openDetail('event3')">
+      <div class="event-date"><div class="event-day">10</div><div class="event-month">Juin</div></div>
+      <div class="event-info">
+        <div class="event-name">Balade contée en forêt</div>
+        <div class="event-sub">Forêt du Bourgailh · Pessac · 9h30</div>
+        <div class="event-tags">
+          <span class="etag">🌿 Nature</span>
+          <span class="etag">4–12 ans</span>
+          <span class="etag">8€/enfant</span>
+        </div>
+      </div>
+    </div>
+    <div class="event fade-in">
+      <div class="event-date"><div class="event-day">14</div><div class="event-month">Juin</div></div>
+      <div class="event-info">
+        <div class="event-name">Apéro en famille au Cassecroûte</div>
+        <div class="event-sub">Darwin · Bastide · 17h–20h</div>
+        <div class="event-tags">
+          <span class="etag">🍷 Apéro parents</span>
+          <span class="etag">Kids welcome</span>
+          <span class="etag">Terrasse</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<button id="fab" onclick="openAddModal()">＋</button>
+
+<!-- NAV -->
+<div id="nav">
+  <div class="nav-item active" id="nav-home" onclick="setNav('home')">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">Accueil</div>
+  </div>
+  <div class="nav-item" id="nav-map" onclick="setNav('map');openMap()">
+    <div class="nav-icon">🗺️</div>
+    <div class="nav-label">Carte</div>
+  </div>
+  <div class="nav-item" id="nav-agenda" onclick="setNav('agenda')">
+    <div class="nav-icon">📅</div>
+    <div class="nav-label">Agenda</div>
+  </div>
+  <div class="nav-item" id="nav-favs" onclick="setNav('favs')">
+    <div class="nav-icon">❤️</div>
+    <div class="nav-label">Favoris</div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="add-modal" onclick="closeModal(event,'add-modal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Ajouter un lieu</div>
+    <div class="modal-sub">Tu connais une pépite à Bordeaux ? Partage-la avec les parents 🙌</div>
+    <div class="form-group">
+      <label class="form-label">Nom du lieu ou événement</label>
+      <input class="form-input" type="text" placeholder="Ex : Parc des Chartrons, L'Atelier Briques…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <div class="form-cats">
+        <div class="form-cat sel" onclick="toggleCat(this)">🌳 Outdoor</div>
+        <div class="form-cat" onclick="toggleCat(this)">🏠 Indoor</div>
+        <div class="form-cat" onclick="toggleCat(this)">🎭 Culture</div>
+        <div class="form-cat" onclick="toggleCat(this)">🍷 Apéro parents</div>
+        <div class="form-cat" onclick="toggleCat(this)">🍕 Resto kids</div>
+        <div class="form-cat" onclick="toggleCat(this)">📚 Biblio</div>
+        <div class="form-cat" onclick="toggleCat(this)">🎨 Atelier</div>
+        <div class="form-cat" onclick="toggleCat(this)">🎭 Spectacle</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Adresse</label>
+      <input class="form-input" type="text" placeholder="Rue, quartier, ville…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Âges recommandés</label>
+      <input class="form-input" type="text" placeholder="Ex : 2–8 ans, tout âge…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tarif</label>
+      <input class="form-input" type="text" placeholder="Ex : Gratuit, 5€/enfant…">
+    </div>
+    <button class="btn-submit">Proposer ce lieu ✨</button>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal" onclick="closeModal(event,'detail-modal')">
+  <div class="modal" id="detail-content">
+    <div class="modal-handle"></div>
+    <div class="detail-img" id="detail-img">🎪</div>
+    <div class="detail-cat" id="detail-cat">Catégorie</div>
+    <div class="detail-name" id="detail-name">Nom du lieu</div>
+    <div class="detail-meta" id="detail-meta"></div>
+    <div class="detail-desc" id="detail-desc"></div>
+  </div>
+</div>
+
+<!-- Google Maps -->
+<script>
+const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
+
+// ── DATA CATEGORIES ──
+const CATEGORIES = {
+  outdoor: { label:'Outdoor', emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56',
+    types:['park','campground'], keywords:['parc','jardin','plein air'] },
+  indoor:  { label:'Indoor',  emoji:'🏠', color:'#EEF0F8', textColor:'#3B4F8C',
+    types:['amusement_park','bowling_alley'], keywords:['parc indoor','trampoline','jeux couverts'] },
+  culture: { label:'Culture', emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6',
+    types:['museum','library','movie_theater','art_gallery'], keywords:['musée','cinéma','théâtre'] },
+  apero:   { label:'Apéro parents', emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B',
+    types:['bar','cafe'], keywords:['bar kids friendly','terrasse famille','darwin bordeaux'] },
+  resto:   { label:'Restos kids', emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D',
+    types:['restaurant'], keywords:['restaurant kids friendly bordeaux','family restaurant'] },
+  biblio:  { label:'Bibliothèque', emoji:'📚', color:'#E6F1FB', textColor:'#185FA5',
+    types:['library'], keywords:['bibliothèque bordeaux','médiathèque'] },
+};
+
+// ── STATE ──
+let map = null;
+let markers = [];
+let allPlaces = [];
+let currentCat = 'all';
+
+// ── SPLASH ──
+setTimeout(() => {
+  document.getElementById('splash').classList.add('out');
+  setTimeout(() => document.getElementById('splash').style.display='none', 600);
+  initApp();
+}, 1800);
+
+// ── INIT ──
+function initApp() {
+  loadGoogleMaps();
+}
+
+function loadGoogleMaps() {
+  const s = document.createElement('script');
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=onMapsReady`;
+  s.async = true; s.defer = true;
+  s.onerror = () => showMapError();
+  document.head.appendChild(s);
+}
+
+window.onMapsReady = function() {
+  initMap();
+  loadAllPlaces();
+};
+
+function initMap() {
+  const bordeaux = { lat: 44.8378, lng: -0.5792 };
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: bordeaux,
+    zoom: 13,
+    disableDefaultUI: true,
+    zoomControl: true,
+    styles: [
+      { featureType:'all', elementType:'geometry', stylers:[{color:'#f2ede4'}] },
+      { featureType:'water', elementType:'geometry', stylers:[{color:'#c9dde8'}] },
+      { featureType:'road', elementType:'geometry', stylers:[{color:'#ffffff'}] },
+      { featureType:'road.arterial', elementType:'geometry', stylers:[{color:'#ede8df'}] },
+      { featureType:'park', elementType:'geometry', stylers:[{color:'#d4e8d0'}] },
+      { featureType:'transit', elementType:'geometry', stylers:[{color:'#e0dbd2'}] },
+      { featureType:'administrative', elementType:'geometry.stroke', stylers:[{color:'#c9c3b8'}] },
+      { elementType:'labels.text.fill', stylers:[{color:'#4a4540'}] },
+      { elementType:'labels.text.stroke', stylers:[{color:'#f2ede4'},{weight:2}] },
+      { featureType:'poi', elementType:'labels', stylers:[{visibility:'off'}] },
+    ]
+  });
+  document.getElementById('map-container').style.display = 'block';
+  document.getElementById('map-placeholder').style.display = 'none';
+}
+
+// ── LOAD PLACES ──
+async function loadAllPlaces() {
+  const bordeaux = new google.maps.LatLng(44.8378, -0.5792);
+  const service = new google.maps.places.PlacesService(document.getElementById('map'));
+
+  const queries = [
+    { cat:'outdoor', query:'parc jardins Bordeaux', type:'park' },
+    { cat:'outdoor', query:'aire de jeux Bordeaux', type:'park' },
+    { cat:'indoor',  query:'parc indoor enfants Bordeaux', type:'amusement_park' },
+    { cat:'culture', query:'musée Bordeaux', type:'museum' },
+    { cat:'culture', query:'cinéma Bordeaux', type:'movie_theater' },
+    { cat:'apero',   query:'bar terrasse famille kids friendly Bordeaux', type:'bar' },
+    { cat:'resto',   query:'restaurant famille enfants Bordeaux', type:'restaurant' },
+    { cat:'biblio',  query:'bibliothèque médiathèque Bordeaux', type:'library' },
+  ];
+
+  const allResults = [];
+
+  for (const q of queries) {
+    try {
+      const results = await searchPlaces(service, bordeaux, q.query);
+      results.forEach(p => {
+        if (!allResults.find(r => r.place_id === p.place_id)) {
+          allResults.push({ ...p, cat: q.cat });
+        }
+      });
+    } catch(e) {}
+    await delay(200);
+  }
+
+  allPlaces = allResults;
+  renderPlaceCards(allPlaces);
+  addMapMarkers(allPlaces);
+}
+
+function searchPlaces(service, location, query) {
+  return new Promise((res, rej) => {
+    service.textSearch({
+      query: query,
+      location: location,
+      radius: 8000,
+    }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK) {
+        res(results.slice(0, 5));
+      } else {
+        res([]);
+      }
+    });
+  });
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── RENDER PLACE CARDS ──
+function renderPlaceCards(places) {
+  const container = document.getElementById('places-scroll');
+  const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="loading-card" style="width:280px;flex-shrink:0">
+      <div style="font-size:28px">🔍</div>
+      <div class="loading-text">Aucun lieu trouvé pour cette catégorie</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.slice(0, 10).map((p, i) => {
+    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    const rating = p.rating ? `⭐ ${p.rating.toFixed(1)}` : '';
+    const addr = p.vicinity ? p.vicinity.split(',')[0] : '';
+    return `
+    <div class="place-card fade-in" style="animation-delay:${i*.06}s" onclick="showPlaceDetail('${p.place_id}','${escStr(p.name)}','${p.cat}','${escStr(addr)}','${rating}')">
+      <div class="place-card-img" style="background:${cat.color}">${cat.emoji}</div>
+      <div class="place-card-body">
+        <div class="place-card-cat" style="color:${cat.textColor}">${cat.label}</div>
+        <div class="place-card-name">${truncate(p.name, 24)}</div>
+        <div class="place-card-footer">
+          <span class="place-card-dist">${addr ? truncate(addr,16) : 'Bordeaux'}</span>
+          ${rating ? `<span class="tag tag-free">${rating}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escStr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : s; }
+
+// ── MAP MARKERS ──
+function addMapMarkers(places) {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+
+  const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
+
+  filtered.forEach(p => {
+    if (!p.geometry) return;
+    const cat = CATEGORIES[p.cat] || CATEGORIES.outdoor;
+    const marker = new google.maps.Marker({
+      position: p.geometry.location,
+      map: map,
+      title: p.name,
+      icon: {
+        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">
+            <ellipse cx="18" cy="39" rx="7" ry="3" fill="rgba(0,0,0,0.15)"/>
+            <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 24 18 24S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="${cat.textColor}"/>
+            <text x="18" y="23" text-anchor="middle" font-size="16">${cat.emoji}</text>
+          </svg>`
+        )}`,
+        scaledSize: new google.maps.Size(32, 38),
+        anchor: new google.maps.Point(16, 38),
+      }
+    });
+    marker.addListener('click', () => {
+      const addr = p.vicinity ? p.vicinity.split(',')[0] : '';
+      const rating = p.rating ? `⭐ ${p.rating.toFixed(1)}` : '';
+      showPlaceDetail(p.place_id, p.name, p.cat, addr, rating);
+    });
+    markers.push(marker);
+  });
+}
+
+// ── FILTER ──
+function filterCat(btn, cat) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCat = cat;
+  renderPlaceCards(allPlaces);
+  addMapMarkers(allPlaces);
+}
+
+// ── DETAIL ──
+function showPlaceDetail(placeId, name, cat, addr, rating) {
+  const catData = CATEGORIES[cat] || CATEGORIES.outdoor;
+  document.getElementById('detail-img').style.background =
+    `linear-gradient(135deg, ${catData.textColor}33, ${catData.textColor}66)`;
+  document.getElementById('detail-img').textContent = catData.emoji;
+  document.getElementById('detail-cat').textContent = catData.label;
+  document.getElementById('detail-name').textContent = name;
+  document.getElementById('detail-meta').innerHTML = [
+    addr ? `<div class="detail-meta-item">📍 ${addr}</div>` : '',
+    rating ? `<div class="detail-meta-item">${rating}</div>` : '',
+    `<div class="detail-meta-item">👶 Kids friendly</div>`,
+  ].join('');
+  document.getElementById('detail-desc').textContent =
+    'Lieu sélectionné par la communauté Gambette. Parfait pour une sortie en famille à Bordeaux !';
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function openDetail(id) {
+  const details = {
+    featured: { emoji:'🎪', cat:'🎭 Spectacle', name:'Festival Chahuts', addr:'Bordeaux Centre', rating:'', desc:'Festival de théâtre de rue pour toute la famille. Spectacles gratuits dans les quartiers de Bordeaux.' },
+    event1:   { emoji:'🎨', cat:'🎨 Atelier', name:'Atelier poterie parents-enfants', addr:'Bacalan', rating:'⭐ 4.8', desc:'Atelier créatif parents-enfants. Venez modeler ensemble ! Tout le matériel est fourni.' },
+    event2:   { emoji:'🎬', cat:'🎬 Cinéma', name:'Cinéma plein air — Le Roi Lion', addr:'Parc Bordelais', rating:'', desc:'Projection en plein air gratuite. Apportez vos plaids et votre pique-nique !' },
+    event3:   { emoji:'🌿', cat:'🌿 Nature', name:'Balade contée en forêt', addr:'Forêt du Bourgailh, Pessac', rating:'⭐ 4.9', desc:'Une balade enchantée avec des histoires contées en chemin. Chaussures de marche recommandées.' },
+  };
+  const d = details[id];
+  if (!d) return;
+  document.getElementById('detail-img').style.background = 'linear-gradient(135deg,#3D6B57,#2D5241)';
+  document.getElementById('detail-img').textContent = d.emoji;
+  document.getElementById('detail-cat').textContent = d.cat;
+  document.getElementById('detail-name').textContent = d.name;
+  document.getElementById('detail-meta').innerHTML = [
+    `<div class="detail-meta-item">📍 ${d.addr}</div>`,
+    d.rating ? `<div class="detail-meta-item">${d.rating}</div>` : '',
+    `<div class="detail-meta-item">👶 Kids friendly</div>`,
+  ].join('');
+  document.getElementById('detail-desc').textContent = d.desc;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+// ── MAP ERROR ──
+function showMapError() {
+  document.getElementById('map-placeholder').innerHTML = `
+    <div style="text-align:center;padding:20px">
+      <div style="font-size:28px;margin-bottom:10px">🗺️</div>
+      <div style="font-size:13px;font-weight:500;color:var(--forest)">Carte indisponible</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Vérifiez la clé API Google Maps</div>
+    </div>`;
+}
+
+// ── MODALS ──
+function openAddModal() {
+  document.getElementById('add-modal').classList.add('open');
+}
+function closeModal(e, id) {
+  if (e.target === document.getElementById(id)) {
+    document.getElementById(id).classList.remove('open');
+  }
+}
+function openMap() {
+  document.getElementById('map-container').scrollIntoView({ behavior:'smooth' });
+}
+
+// ── NAV ──
+function setNav(tab) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-'+tab)?.classList.add('active');
+}
+
+// ── FORM CATS ──
+function toggleCat(el) { el.classList.toggle('sel'); }
+</script>
+</body>
+</html>

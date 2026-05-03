@@ -429,7 +429,7 @@ body {
   position:fixed; inset:0;
   background:rgba(26,26,24,.65);
   backdrop-filter:blur(5px);
-  z-index:200; display:flex; align-items:flex-end;
+  z-index:500; display:flex; align-items:flex-end;
   opacity:0; pointer-events:none;
   transition:opacity .3s;
 }
@@ -443,6 +443,36 @@ body {
 }
 .modal-overlay.open .modal{transform:translateY(0)}
 .modal-handle{width:40px;height:4px;background:var(--sand);border-radius:2px;margin:18px auto 20px}
+
+/* ── CHOICE MODAL ── */
+.choice-btn {
+  display:flex; align-items:center; gap:14px;
+  background:var(--cream); border-radius:16px;
+  padding:16px; cursor:pointer;
+  transition:background .15s, transform .15s;
+  border:1.5px solid var(--sand);
+}
+.choice-btn:active { background:var(--cream2); transform:scale(.98); }
+.choice-btn-icon {
+  width:48px; height:48px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0;
+}
+.choice-btn-info { flex:1; }
+.choice-btn-title { font-size:15px; font-weight:500; color:var(--charcoal); margin-bottom:3px; }
+.choice-btn-sub { font-size:12px; font-weight:300; color:var(--muted); }
+.choice-btn-arrow { font-size:18px; color:var(--muted); }
+
+/* ── MODAL CLOSE BTN ── */
+.modal-close-btn {
+  width:32px; height:32px; border-radius:50%;
+  background:var(--cream2); border:none;
+  font-size:13px; color:var(--muted); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'DM Sans',sans-serif; flex-shrink:0;
+  transition:background .15s; margin-left:auto;
+}
+.modal-close-btn:active { background:var(--sand); }
 .modal-title{font-family:'Fraunces',serif;font-size:23px;font-weight:600;margin-bottom:5px}
 .modal-sub{font-size:13px;font-weight:300;color:var(--muted);margin-bottom:22px;line-height:1.5}
 .form-group{margin-bottom:15px}
@@ -841,7 +871,7 @@ body {
 </div>
 
 <!-- FAB -->
-<button id="fab" onclick="openAddModal()">＋</button>
+<button id="fab" onclick="openChoiceModal()">＋</button>
 
 <!-- NAV -->
 <div id="nav">
@@ -863,12 +893,42 @@ body {
   </div>
 </div>
 
-<!-- ADD MODAL -->
+<!-- CHOICE MODAL -->
+<div class="modal-overlay" id="choice-modal" onclick="closeModal(event,'choice-modal')">
+  <div class="modal" style="padding-bottom:36px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Que veux-tu ajouter ?</div>
+    <div class="modal-sub">Aide la communauté Gambette à découvrir de nouvelles pépites 🙌</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+      <div class="choice-btn" onclick="closeModalById('choice-modal');openAddModal('lieu')">
+        <div class="choice-btn-icon" style="background:#E8F4EF">📍</div>
+        <div class="choice-btn-info">
+          <div class="choice-btn-title">Un lieu</div>
+          <div class="choice-btn-sub">Parc, resto, biblio, indoor…</div>
+        </div>
+        <div class="choice-btn-arrow">→</div>
+      </div>
+      <div class="choice-btn" onclick="closeModalById('choice-modal');openAddModal('evenement')">
+        <div class="choice-btn-icon" style="background:#FDF3E7">🎉</div>
+        <div class="choice-btn-info">
+          <div class="choice-btn-title">Un événement</div>
+          <div class="choice-btn-sub">Atelier, spectacle, sortie…</div>
+        </div>
+        <div class="choice-btn-arrow">→</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL LIEU -->
 <div class="modal-overlay" id="add-modal" onclick="closeModal(event,'add-modal')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Proposer un lieu</div>
-    <div class="modal-sub">Trouve le lieu sur la carte, puis ajoute quelques infos 🙌</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="modal-title" style="margin-bottom:0" id="add-modal-title">Proposer un lieu</div>
+      <button class="modal-close-btn" onclick="closeModalById('add-modal')">✕</button>
+    </div>
+    <div class="modal-sub" id="add-modal-sub">Trouve le lieu sur la carte, puis ajoute quelques infos 🙌</div>
 
     <!-- ÉTAPE 1 : Recherche lieu -->
     <div id="add-step1">
@@ -880,8 +940,6 @@ body {
           autocomplete="off">
         <div id="place-suggestions" class="place-suggestions"></div>
       </div>
-
-      <!-- Lieu sélectionné -->
       <div id="place-selected" style="display:none">
         <div class="place-selected-card">
           <div class="place-selected-icon" id="sel-icon">📍</div>
@@ -894,62 +952,132 @@ body {
       </div>
     </div>
 
-    <!-- ÉTAPE 2 : Tags (visible après sélection) -->
+    <!-- ÉTAPE 2 : Tags lieu -->
     <div id="add-step2" style="display:none">
-
       <div class="form-group">
         <label class="form-label">Type d'activité</label>
-        <div class="form-cats" id="add-cats">
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🌳 Outdoor</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🏠 Indoor</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🎭 Culture</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🍷 Apéro parents</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🍕 Resto kids</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">📚 Biblio</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🎨 Atelier</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'cat')">🎭 Spectacle</div>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Outdoor</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🏠 Indoor</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🍷 Apéro parents</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🍕 Resto kids</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">📚 Biblio</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎨 Atelier</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Spectacle</div>
         </div>
       </div>
-
       <div class="form-group">
         <label class="form-label">Âge recommandé</label>
         <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTag(this,'age')">👶 0–2 ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'age')">🧒 3–5 ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'age')">🧑 6–10 ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'age')">👦 10+ ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'age')">👨‍👩‍👧 Tout âge</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">👶 0–2 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🧒 3–5 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🧑 6–10 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">👦 10+ ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">👨‍👩‍👧 Tout âge</div>
         </div>
       </div>
-
       <div class="form-group">
         <label class="form-label">Moment idéal</label>
         <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTag(this,'moment')">📅 Week-end</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'moment')">📆 En semaine</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'moment')">🌅 Matin</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'moment')">☀️ Midi</div>
-          <div class="form-cat" onclick="toggleAddTag(this,'moment')">🌙 Soir</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">📅 Week-end</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">📆 En semaine</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🌅 Matin</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">☀️ Midi</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🌙 Soir</div>
         </div>
       </div>
-
       <div class="form-group">
         <label class="form-label">Tarif</label>
         <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTagSingle(this,'tarif')">💚 Gratuit</div>
-          <div class="form-cat" onclick="toggleAddTagSingle(this,'tarif')">💰 Payant</div>
-          <div class="form-cat" onclick="toggleAddTagSingle(this,'tarif')">🎟️ Sur réservation</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this)">💚 Gratuit</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this)">💰 Payant</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this)">🎟️ Sur réservation</div>
         </div>
       </div>
-
       <div class="form-group">
         <label class="form-label">Un mot sur ce lieu (optionnel)</label>
         <textarea class="form-input" id="add-comment" rows="2"
           placeholder="Ce qui le rend spécial pour les familles…"
           style="resize:none;line-height:1.5"></textarea>
       </div>
-
       <button class="btn-submit" onclick="submitNewPlace()">Proposer ce lieu ✨</button>
+    </div>
+
+    <!-- FORMULAIRE ÉVÉNEMENT -->
+    <div id="add-event-form" style="display:none">
+      <div class="form-group" style="position:relative">
+        <label class="form-label">Nom de l'événement</label>
+        <input class="form-input" id="event-name-input" type="text" placeholder="Ex : Atelier poterie, Ciné plein air…">
+      </div>
+      <div class="form-group" style="position:relative">
+        <label class="form-label">Lieu (rechercher)</label>
+        <input class="form-input" id="event-place-input" type="text"
+          placeholder="Ex : Parc Bordelais, Darwin…"
+          oninput="searchEventPlace(this.value)"
+          autocomplete="off">
+        <div id="event-place-suggestions" class="place-suggestions"></div>
+      </div>
+      <div id="event-place-selected" style="display:none">
+        <div class="place-selected-card">
+          <div class="place-selected-icon">📍</div>
+          <div class="place-selected-info">
+            <div class="place-selected-name" id="event-sel-name"></div>
+            <div class="place-selected-addr" id="event-sel-addr"></div>
+          </div>
+          <button class="place-selected-change" onclick="resetEventPlace()">Changer</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Date de début</label>
+          <input class="form-input" id="event-date-start" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date de fin</label>
+          <input class="form-input" id="event-date-end" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure</label>
+        <input class="form-input" id="event-time" type="text" placeholder="Ex : 10h–12h, dès 14h…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type d'activité</label>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Outdoor</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🍷 Apéro parents</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎨 Atelier</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Spectacle</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🎬 Ciné</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Âge recommandé</label>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTag(this)">👶 0–2 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🧒 3–5 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">🧑 6–10 ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">👦 10+ ans</div>
+          <div class="form-cat" onclick="toggleAddTag(this)">👨‍👩‍👧 Tout âge</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tarif</label>
+        <div class="form-cats">
+          <div class="form-cat" onclick="toggleAddTagSingle(this)">💚 Gratuit</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this)">💰 Payant</div>
+          <div class="form-cat" onclick="toggleAddTagSingle(this)">🎟️ Sur réservation</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description (optionnel)</label>
+        <textarea class="form-input" id="event-desc" rows="2"
+          placeholder="Ce qui rend cet événement spécial…"
+          style="resize:none;line-height:1.5"></textarea>
+      </div>
+      <button class="btn-submit" onclick="submitNewEvent()">Proposer cet événement ✨</button>
     </div>
 
   </div>
@@ -958,7 +1086,11 @@ body {
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detail-modal" onclick="closeModal(event,'detail-modal')">
   <div class="modal" style="padding-bottom:40px">
-    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0 4px">
+      <div style="width:40px;height:4px;background:var(--sand);border-radius:2px;margin:0 auto 0 auto;position:absolute;left:50%;transform:translateX(-50%)"></div>
+      <div></div>
+      <button class="modal-close-btn" onclick="closeModalById('detail-modal')">✕</button>
+    </div>
 
     <!-- Entête lieu -->
     <div class="detail-img" id="detail-img">🎪</div>
@@ -1474,9 +1606,86 @@ function submitReview() {
 let addSelectedPlace = null;
 let searchDebounce = null;
 
-function openAddModal() {
+function openChoiceModal() {
+  document.getElementById('choice-modal').classList.add('open');
+}
+
+function closeModalById(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function openAddModal(type) {
   resetPlaceSearch();
+  const isEvent = type === 'evenement';
+  document.getElementById('add-modal-title').textContent = isEvent ? 'Proposer un événement' : 'Proposer un lieu';
+  document.getElementById('add-modal-sub').textContent = isEvent
+    ? 'Partage un événement kids-friendly à Bordeaux 🎉'
+    : 'Trouve le lieu sur la carte, puis ajoute quelques infos 🙌';
+  document.getElementById('add-step1').style.display = isEvent ? 'none' : 'block';
+  document.getElementById('add-step2').style.display = 'none';
+  document.getElementById('add-event-form').style.display = isEvent ? 'block' : 'none';
   document.getElementById('add-modal').classList.add('open');
+}
+
+// Recherche lieu pour événement
+let eventSelectedPlace = null;
+let eventSearchDebounce = null;
+
+function searchEventPlace(val) {
+  clearTimeout(eventSearchDebounce);
+  const box = document.getElementById('event-place-suggestions');
+  if (!val || val.length < 2) { box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML = '<div class="place-suggestion-loading">Recherche…</div>';
+  box.style.display = 'block';
+  eventSearchDebounce = setTimeout(() => {
+    if (!window.google) return;
+    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    svc.textSearch({ query: val + ' Bordeaux', location: new google.maps.LatLng(44.8378, -0.5792), radius: 15000 },
+      (results, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+          box.innerHTML = '<div class="place-suggestion-loading">Aucun résultat</div>'; return;
+        }
+        window._eventSearchResults = results;
+        box.innerHTML = results.slice(0, 5).map((p, i) => `
+          <div class="place-suggestion-item" onclick="selectEventPlace(${i})">
+            <div class="place-suggestion-icon">📍</div>
+            <div>
+              <div class="place-suggestion-name">${p.name}</div>
+              <div class="place-suggestion-addr">${(p.formatted_address||p.vicinity||'').split(',').slice(0,2).join(',')}</div>
+            </div>
+          </div>`).join('');
+      });
+  }, 350);
+}
+
+function selectEventPlace(idx) {
+  const p = window._eventSearchResults?.[idx];
+  if (!p) return;
+  eventSelectedPlace = { name: p.name, addr: p.formatted_address || p.vicinity || '' };
+  document.getElementById('event-place-input').value = '';
+  document.getElementById('event-place-suggestions').style.display = 'none';
+  document.getElementById('event-sel-name').textContent = p.name;
+  document.getElementById('event-sel-addr').textContent = eventSelectedPlace.addr.split(',').slice(0,2).join(',');
+  document.getElementById('event-place-selected').style.display = 'block';
+}
+
+function resetEventPlace() {
+  eventSelectedPlace = null;
+  document.getElementById('event-place-input').value = '';
+  document.getElementById('event-place-selected').style.display = 'none';
+}
+
+function submitNewEvent() {
+  const name = document.getElementById('event-name-input').value.trim();
+  if (!name) { alert('Merci d\'indiquer le nom de l\'événement'); return; }
+  const btn = document.querySelector('#add-event-form .btn-submit');
+  btn.textContent = '⏳ En attente de validation…';
+  btn.style.background = '#2D5241';
+  setTimeout(() => {
+    closeModalById('add-modal');
+    btn.textContent = 'Proposer cet événement ✨';
+    btn.style.background = '';
+  }, 2000);
 }
 
 function resetPlaceSearch() {
@@ -1565,10 +1774,10 @@ function submitNewPlace() {
   addLeafletMarkers(allPlaces);
 
   const btn = document.querySelector('#add-modal .btn-submit');
-  btn.textContent = '✅ Lieu proposé, merci !';
+  btn.textContent = '⏳ En attente de validation…';
   btn.style.background = '#2D5241';
   setTimeout(() => {
-    document.getElementById('add-modal').classList.remove('open');
+    closeModalById('add-modal');
     btn.textContent = 'Proposer ce lieu ✨';
     btn.style.background = '';
     resetPlaceSearch();

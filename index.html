@@ -1271,6 +1271,37 @@ function initLeafletMap() {
   [200, 600, 1200, 2000].forEach(t => setTimeout(() => leafletMap.invalidateSize(), t));
 }
 
+function addLeafletMarkers(places) {
+  if (!leafletMap) return;
+  leafletMarkers.forEach(function(m) { leafletMap.removeLayer(m); });
+  leafletMarkers = [];
+
+  const filtered = currentCat === 'all' ? places : places.filter(function(p) { return p.cat === currentCat; });
+
+  filtered.forEach(function(p) {
+    if (!p.lat || !p.lng) return;
+    const cat = CATEGORIES[p.cat] || CATEGORIES.jeux_ext;
+    const icon = L.divIcon({
+      className: '',
+      html: '<div style="background:' + cat.textColor + ';width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.25);border:2px solid white;"><span style="transform:rotate(45deg);font-size:16px">' + cat.emoji + '</span></div>',
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+    });
+    const marker = L.marker([p.lat, p.lng], { icon })
+      .addTo(leafletMap)
+      .on('click', function() { showPlaceDetail(p.name, p.cat, p.addr, p.rating); });
+    leafletMarkers.push(marker);
+  });
+}
+
+// Ordre d'affichage des catégories
+const CAT_ORDER = ['jeux_ext','jeux_int','culture','apero','resto','eau'];
+function sortPlaces() {
+  allPlaces.sort(function(a, b) {
+    return (CAT_ORDER.indexOf(a.cat) - CAT_ORDER.indexOf(b.cat));
+  });
+}
+
 async function loadPlacesFromSupabase() {
   try {
     const data = await supaFetch('lieux?valide=eq.true&select=*');
@@ -1284,8 +1315,8 @@ async function loadPlacesFromSupabase() {
           ages: p.ages, tarif: p.tarif,
         };
       });
+      sortPlaces();
       renderPlaceCards(allPlaces);
-      // Attendre que la carte soit initialisée avant d'ajouter les marqueurs
       waitForMapThenAddMarkers();
     } else {
       loadStaticPlaces();
@@ -1297,11 +1328,12 @@ async function loadPlacesFromSupabase() {
 }
 
 function waitForMapThenAddMarkers() {
-  if (leafletMap) {
+  if (leafletMap && leafletMap.getContainer()) {
     leafletMap.invalidateSize();
-    addLeafletMarkers(allPlaces);
+    // Petit délai supplémentaire pour s'assurer que les tiles sont chargées
+    setTimeout(function() { addLeafletMarkers(allPlaces); }, 300);
   } else {
-    setTimeout(waitForMapThenAddMarkers, 200);
+    setTimeout(waitForMapThenAddMarkers, 300);
   }
 }
 
@@ -1321,6 +1353,8 @@ function loadStaticPlaces() {
     { name:'Plage du Lac', cat:'eau', lat:44.8850, lng:-0.5730, addr:'Bordeaux Lac', rating:'⭐ 4.5' },
     { name:'Plage de Lacanau', cat:'eau', lat:44.9800, lng:-1.1900, addr:'Lacanau-Océan', rating:'⭐ 4.6' },
   ];
+  // Trier : jeux_ext en premier
+  sortPlaces();
   waitForMapThenAddMarkers();
   renderPlaceCards(allPlaces);
 }

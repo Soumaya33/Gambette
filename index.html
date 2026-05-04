@@ -1207,166 +1207,121 @@ body {
 <script>
 const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
 
+// SUPABASE
+const SUPABASE_URL = 'https://xwykpuytwjiwuxhpeqrt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3eWtwdXl0d2ppd3V4aHBlcXJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDc2OTUsImV4cCI6MjA5MzQyMzY5NX0.eOwSEwEuKChEV-oygJkpimKPO7vT4aiHm7oPiKYveGE';
+
+async function supaFetch(path, opts) {
+  opts = opts || {};
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+    }, opts.headers || {}),
+    body: opts.body || undefined,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  if (opts.method === 'POST') return res;
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : [];
+}
+
 const CATEGORIES = {
-  jeux_ext:  { label:'Jeux extérieur',  emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
-  jeux_int:  { label:'Jeux intérieur',  emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
-  culture:   { label:'Culture & biblio',emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
-  apero:     { label:'Apéro parents',   emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
-  resto:     { label:'Resto kids',      emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
-  eau:       { label:"Au bord de l'eau", emoji:'🌊', color:'#E6F1FB', textColor:'#185FA5' },
+  jeux_ext: { label:'Jeux extérieur',  emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
+  jeux_int: { label:'Jeux intérieur',  emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
+  culture:  { label:'Culture & biblio', emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
+  apero:    { label:'Apéro parents',   emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
+  resto:    { label:'Resto kids',       emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
+  eau:      { label:"Au bord de l'eau", emoji:'🌊', color:'#E6F1FB', textColor:'#185FA5' },
 };
 
-let leafletMap = null;
-let leafletMarkers = [];
-let allPlaces = [];
-let currentCat = 'all';
+let leafletMap = null, leafletMarkers = [], allPlaces = [];
+let currentCat = 'all', currentMoment = 'all', currentAge = 'all';
 
-// ── SPLASH ──
 function startApp() {
-  setTimeout(() => {
+  setTimeout(function() {
     document.getElementById('splash').classList.add('out');
-    setTimeout(() => document.getElementById('splash').style.display='none', 600);
+    setTimeout(function() { document.getElementById('splash').style.display='none'; }, 600);
     initLeafletMap();
-    loadPlacesViaAPI();
+    loadPlacesFromSupabase();
+    loadGoogleForSearch();
   }, 1800);
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startApp);
-} else {
-  startApp();
+} else { startApp(); }
+
+function initLeafletMap() {
+  const mapEl = document.getElementById('map');
+  mapEl.style.height = '220px';
+  mapEl.style.width = '100%';
+  mapEl.style.display = 'block';
+
+  leafletMap = L.map('map', { zoomControl: true, attributionControl: false }).setView([44.8378, -0.5792], 13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(leafletMap);
+
+  // Observer qui force le recalcul dès que le conteneur devient visible
+  const ro = new ResizeObserver(() => { leafletMap.invalidateSize(); });
+  ro.observe(mapEl);
+
+  // Sécurité supplémentaire
+  [200, 600, 1200, 2000].forEach(t => setTimeout(() => leafletMap.invalidateSize(), t));
 }
 
-// ── LEAFLET MAP (OpenStreetMap, 100% gratuit) ──
-function initLeafletMap() {
-  leafletMap = L.map('map', { zoomControl: true, attributionControl: false })
-    .setView([44.8378, -0.5792], 13);
+async function loadPlacesFromSupabase() {
+  try {
+    const data = await supaFetch('lieux?valide=eq.true&select=*');
+    if (data && data.length > 0) {
+      allPlaces = data.map(function(p) {
+        return {
+          id: p.id, name: p.nom, cat: p.categorie,
+          lat: p.latitude, lng: p.longitude,
+          addr: p.adresse || 'Bordeaux', rating: '',
+          description: p.description, label: p.label_redac,
+          ages: p.ages, tarif: p.tarif,
+        };
+      });
+      renderPlaceCards(allPlaces);
+      addLeafletMarkers(allPlaces);
+    } else {
+      loadStaticPlaces();
+    }
+  } catch(e) {
+    console.warn('Supabase indisponible, fallback', e);
+    loadStaticPlaces();
+  }
+}
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19
-  }).addTo(leafletMap);
-
-  // Force le recalcul de la taille après rendu
-  setTimeout(() => leafletMap.invalidateSize(), 100);
-  setTimeout(() => leafletMap.invalidateSize(), 500);
-
-  // Marqueurs statiques Bordeaux kids-friendly pour démo immédiate
-  const staticPlaces = [
+function loadStaticPlaces() {
+  allPlaces = [
     { name:'Jardin Public', cat:'jeux_ext', lat:44.8475, lng:-0.5796, addr:'Cours de Verdun', rating:'⭐ 4.7' },
     { name:'Parc Bordelais', cat:'jeux_ext', lat:44.8558, lng:-0.5979, addr:'Rue du Bocage', rating:'⭐ 4.8' },
     { name:'Parc de la Chêneraie', cat:'jeux_ext', lat:44.8220, lng:-0.6020, addr:'Gradignan', rating:'⭐ 4.6' },
-    { name:'Parc Rivière', cat:'jeux_ext', lat:44.8640, lng:-0.5990, addr:'Le Bouscat', rating:'⭐ 4.5' },
-    { name:'Aire de jeux Bacalan', cat:'jeux_ext', lat:44.8680, lng:-0.5540, addr:'Bacalan', rating:'⭐ 4.2' },
-    { name:'Plaine des sports de Caudéran', cat:'jeux_ext', lat:44.8520, lng:-0.6070, addr:'Caudéran', rating:'⭐ 4.3' },
     { name:'Cap Sciences', cat:'culture', lat:44.8621, lng:-0.5512, addr:'Hangar 20', rating:'⭐ 4.5' },
     { name:'Utopia Cinéma', cat:'culture', lat:44.8355, lng:-0.5738, addr:'Sainte-Croix', rating:'⭐ 4.6' },
-    { name:'Musée d\'Aquitaine', cat:'culture', lat:44.8380, lng:-0.5720, addr:'Cours Pasteur', rating:'⭐ 4.4' },
     { name:'Médiathèque Mériadeck', cat:'culture', lat:44.8378, lng:-0.5842, addr:'Rue Mériadeck', rating:'⭐ 4.3' },
-    { name:'Bibliothèque Chartrons', cat:'culture', lat:44.8500, lng:-0.5700, addr:'Chartrons', rating:'⭐ 4.4' },
     { name:'Ludothèque Carabouille', cat:'jeux_int', lat:44.8410, lng:-0.5780, addr:'Saint-Michel', rating:'⭐ 4.6' },
-    { name:'La Manufacture', cat:'jeux_int', lat:44.8490, lng:-0.5620, addr:'Rue Carle Vernet', rating:'⭐ 4.3' },
     { name:'Jump In Bordeaux', cat:'jeux_int', lat:44.8700, lng:-0.5300, addr:'Zone Commerciale', rating:'⭐ 4.4' },
-    { name:'Laser Game Bordeaux', cat:'jeux_int', lat:44.8410, lng:-0.5650, addr:'Centre-ville', rating:'⭐ 4.2' },
-    { name:'Darwin Ecosystème', cat:'apero', lat:44.8310, lng:-0.5540, addr:'Bâtiment Darwin', rating:'⭐ 4.5' },
-    { name:'Café du Musée', cat:'apero', lat:44.8414, lng:-0.5721, addr:'Cours Pasteur', rating:'⭐ 4.2' },
+    { name:'Darwin Écosystème', cat:'apero', lat:44.8310, lng:-0.5540, addr:'Bâtiment Darwin', rating:'⭐ 4.5' },
     { name:'Le Milk', cat:'resto', lat:44.8400, lng:-0.5710, addr:'Rue Palais Gallien', rating:'⭐ 4.4' },
-    { name:'Piscine Judaïque', cat:'eau', lat:44.8460, lng:-0.5890, addr:'Rue Judaïque', rating:'⭐ 4.1' },
     { name:'Piscine du Lac', cat:'eau', lat:44.8820, lng:-0.5760, addr:'Bordeaux Lac', rating:'⭐ 4.3' },
-    { name:'Plage du Lac de Bordeaux', cat:'eau', lat:44.8850, lng:-0.5730, addr:'Bordeaux Lac', rating:'⭐ 4.5' },
-    { name:'Base nautique de Carcans', cat:'eau', lat:45.0800, lng:-1.0800, addr:'Carcans-Maubuisson', rating:'⭐ 4.7' },
-    { name:'Plage de Lacanau Océan', cat:'eau', lat:44.9800, lng:-1.1900, addr:'Lacanau-Océan', rating:'⭐ 4.6' },
+    { name:'Plage du Lac', cat:'eau', lat:44.8850, lng:-0.5730, addr:'Bordeaux Lac', rating:'⭐ 4.5' },
+    { name:'Plage de Lacanau', cat:'eau', lat:44.9800, lng:-1.1900, addr:'Lacanau-Océan', rating:'⭐ 4.6' },
   ];
-
-  allPlaces = staticPlaces;
   renderPlaceCards(allPlaces);
   addLeafletMarkers(allPlaces);
 }
 
-function addLeafletMarkers(places) {
-  leafletMarkers.forEach(m => leafletMap.removeLayer(m));
-  leafletMarkers = [];
-
-  const filtered = currentCat === 'all' ? places : places.filter(p => p.cat === currentCat);
-
-  filtered.forEach(p => {
-    const cat = CATEGORIES[p.cat] || CATEGORIES.jeux_ext;
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="
-        background:${cat.textColor};
-        width:36px;height:36px;border-radius:50% 50% 50% 0;
-        transform:rotate(-45deg);
-        display:flex;align-items:center;justify-content:center;
-        box-shadow:0 3px 10px rgba(0,0,0,0.25);
-        border:2px solid white;
-      "><span style="transform:rotate(45deg);font-size:16px">${cat.emoji}</span></div>`,
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
-    });
-
-    const marker = L.marker([p.lat, p.lng], { icon })
-      .addTo(leafletMap)
-      .on('click', () => showPlaceDetail(p.name, p.cat, p.addr, p.rating));
-
-    leafletMarkers.push(marker);
-  });
-}
-
-// ── GOOGLE PLACES (pour enrichir les cartes) ──
-function loadPlacesViaAPI() {
-  const s = document.createElement('script');
-  s.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=onGoogleReady`;
+function loadGoogleForSearch() {
+  var s = document.createElement('script');
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + API_KEY + '&libraries=places&callback=onGoogleReady';
   s.async = true; s.defer = true;
   document.head.appendChild(s);
 }
-
-window.onGoogleReady = function() {
-  const dummy = document.createElement('div');
-  const service = new google.maps.places.PlacesService(dummy);
-  const bordeaux = new google.maps.LatLng(44.8378, -0.5792);
-
-  const queries = [
-    { cat:'jeux_ext', query:'parc jeux enfants aire de jeux Bordeaux' },
-    { cat:'jeux_ext', query:'parc jardin Bordeaux enfants' },
-    { cat:'jeux_int', query:'ludothèque jeux intérieur enfants Bordeaux' },
-    { cat:'jeux_int', query:'parc indoor trampoline Bordeaux' },
-    { cat:'culture',  query:'musée cinéma théâtre Bordeaux' },
-    { cat:'culture',  query:'médiathèque bibliothèque Bordeaux' },
-    { cat:'apero',    query:'bar terrasse famille kids friendly Bordeaux' },
-    { cat:'resto',    query:'restaurant enfants famille Bordeaux' },
-    { cat:'eau',  query:'piscine aquatique enfants Bordeaux' },
-  ];
-
-  let done = 0;
-  const enriched = [...allPlaces];
-
-  queries.forEach(q => {
-    service.textSearch({ query: q.query, location: bordeaux, radius: 8000 },
-      (results, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK) {
-          results.slice(0, 4).forEach(p => {
-            if (!enriched.find(e => e.name === p.name)) {
-              enriched.push({
-                name: p.name,
-                cat: q.cat,
-                lat: p.geometry.location.lat(),
-                lng: p.geometry.location.lng(),
-                addr: p.vicinity ? p.vicinity.split(',')[0] : 'Bordeaux',
-                rating: p.rating ? `⭐ ${p.rating.toFixed(1)}` : '',
-              });
-            }
-          });
-        }
-        done++;
-        if (done === queries.length) {
-          allPlaces = enriched;
-          renderPlaceCards(allPlaces);
-          addLeafletMarkers(allPlaces);
-        }
-      }
-    );
-  });
-};
+window.onGoogleReady = function() { console.log('Google Places pret'); };
 
 // ── RENDER CARDS ──
 function renderPlaceCards(places) {
@@ -1492,7 +1447,6 @@ function saveAdminEdit() {
     showAdminList();
   }, 1500);
 }
-let currentAge = 'all';
 
 function filterMoment(btn, moment) {
   document.querySelectorAll('#filters-moment .filter-btn-sub').forEach(b => b.classList.remove('active'));
@@ -1595,31 +1549,37 @@ function renderReviews(placeId) {
     </div>`).join('');
 }
 
-function submitReview() {
+async function submitReview() {
   const name = document.getElementById('review-name').value.trim();
   const text = document.getElementById('review-text').value.trim();
-
   if (!currentStars) { alert('Merci de donner une note ⭐'); return; }
   if (!name) { alert('Merci d\'indiquer ton prénom'); return; }
   if (!text) { alert('Merci d\'écrire un petit avis'); return; }
 
+  const avis = { auteur: name, note: currentStars, commentaire: text };
+  // Lier à un lieu si on a son id Supabase, sinon stocker localement
+  const place = allPlaces.find(p => (p.id || p.name.toLowerCase().replace(/\s+/g,'-')) === currentPlaceId);
+  if (place && place.id) {
+    avis.lieu_id = place.id;
+  }
+
+  try {
+    await supaFetch('avis', { method: 'POST', body: JSON.stringify(avis) });
+  } catch(e) {
+    console.warn('Erreur Supabase avis, stockage local', e);
+  }
+
   if (!reviews[currentPlaceId]) reviews[currentPlaceId] = [];
   reviews[currentPlaceId].unshift({
-    author: name,
-    stars: currentStars,
-    text: text,
+    author: name, stars: currentStars, text: text,
     date: new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }),
   });
 
-  // Reset form
   document.getElementById('review-name').value = '';
   document.getElementById('review-text').value = '';
   setStar(0);
-
-  // Refresh
   renderReviews(currentPlaceId);
 
-  // Confirmation visuelle
   const btn = document.querySelector('#detail-modal .btn-submit');
   const orig = btn.textContent;
   btn.textContent = '✅ Avis publié, merci !';
@@ -1699,9 +1659,28 @@ function resetEventPlace() {
   document.getElementById('event-place-selected').style.display = 'none';
 }
 
-function submitNewEvent() {
+async function submitNewEvent() {
   const name = document.getElementById('event-name-input').value.trim();
   if (!name) { alert('Merci d\'indiquer le nom de l\'événement'); return; }
+
+  const evt = {
+    nom: name,
+    adresse: eventSelectedPlace ? eventSelectedPlace.addr : null,
+    latitude: eventSelectedPlace ? eventSelectedPlace.lat : null,
+    longitude: eventSelectedPlace ? eventSelectedPlace.lng : null,
+    date_debut: document.getElementById('event-date-start').value || null,
+    date_fin: document.getElementById('event-date-end').value || null,
+    heure: document.getElementById('event-time').value || null,
+    description: document.getElementById('event-desc').value.trim() || null,
+    valide: false,
+  };
+
+  try {
+    await supaFetch('evenements', { method: 'POST', body: JSON.stringify(evt) });
+  } catch(e) {
+    console.warn('Erreur Supabase événement', e);
+  }
+
   const btn = document.querySelector('#add-event-form .btn-submit');
   btn.textContent = '⏳ En attente de validation…';
   btn.style.background = '#2D5241';
@@ -1781,21 +1760,27 @@ function toggleAddTagSingle(el) {
   el.classList.add('sel');
 }
 
-function submitNewPlace() {
+async function submitNewPlace() {
   if (!addSelectedPlace) { alert('Merci de sélectionner un lieu'); return; }
   const cats = [...document.querySelectorAll('#add-modal .form-cat.sel')].map(c => c.textContent.trim());
   if (!cats.length) { alert('Merci de sélectionner au moins un tag'); return; }
 
-  allPlaces.push({
-    name: addSelectedPlace.name,
-    cat: 'jeux_ext',
-    lat: addSelectedPlace.lat || 44.8378,
-    lng: addSelectedPlace.lng || -0.5792,
-    addr: addSelectedPlace.addr.split(',')[0],
-    rating: '',
-  });
-  renderPlaceCards(allPlaces);
-  addLeafletMarkers(allPlaces);
+  const lieu = {
+    nom: addSelectedPlace.name,
+    adresse: addSelectedPlace.addr,
+    latitude: addSelectedPlace.lat || 44.8378,
+    longitude: addSelectedPlace.lng || -0.5792,
+    google_place_id: addSelectedPlace.placeId || null,
+    categorie: 'jeux_ext',
+    description: document.getElementById('add-comment').value.trim() || null,
+    valide: false,
+  };
+
+  try {
+    await supaFetch('lieux', { method: 'POST', body: JSON.stringify(lieu) });
+  } catch(e) {
+    console.warn('Erreur Supabase lieu', e);
+  }
 
   const btn = document.querySelector('#add-modal .btn-submit');
   btn.textContent = '⏳ En attente de validation…';

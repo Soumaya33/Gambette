@@ -529,6 +529,24 @@ body {
 .fade-in{animation:fadeIn .4s ease forwards}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── FAVORITE BTN ── */
+.fav-btn {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--cream2); border:none;
+  font-size:18px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .2s, background .15s;
+}
+.fav-btn:active { transform:scale(1.2); }
+.fav-btn.active { background:#FBE9E7; }
+
+/* ── FAVORIS PAGE ── */
+.favs-empty {
+  text-align:center; padding:60px 24px;
+  font-size:14px; font-weight:300; color:var(--muted); line-height:1.7;
+}
+.favs-empty-icon { font-size:48px; margin-bottom:16px; }
+
 /* ── PLACE SEARCH ── */
 .place-suggestions {
   position:absolute; top:100%; left:0; right:0; z-index:50;
@@ -819,7 +837,7 @@ body {
 
   <!-- EVENTS -->
   <div class="sec-hd" style="margin-top:28px">
-    <div class="sec-title">Cette semaine</div>
+    <div class="sec-title">Évènements à venir</div>
     <button class="sec-link">Tout voir →</button>
   </div>
   <div id="events-list">
@@ -873,6 +891,14 @@ body {
     </div>
   </div>
 
+  <!-- FAVORIS (masqué par défaut) -->
+  <div id="favs-section" style="display:none">
+    <div class="sec-hd" style="margin-top:8px">
+      <div class="sec-title">❤️ Mes favoris</div>
+    </div>
+    <div id="favs-list"></div>
+  </div>
+
 </div>
 
 <!-- FAB -->
@@ -888,9 +914,9 @@ body {
     <div class="nav-icon">🗺️</div>
     <div class="nav-label">Carte</div>
   </div>
-  <div class="nav-item" id="nav-agenda" onclick="setNav('agenda')">
+  <div class="nav-item" id="nav-events" onclick="setNav('events')">
     <div class="nav-icon">📅</div>
-    <div class="nav-label">Agenda</div>
+    <div class="nav-label">Évènements</div>
   </div>
   <div class="nav-item" id="nav-favs" onclick="setNav('favs')">
     <div class="nav-icon">❤️</div>
@@ -1093,7 +1119,10 @@ body {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0 4px">
       <div style="width:40px;height:4px;background:var(--sand);border-radius:2px;margin:0 auto 0 auto;position:absolute;left:50%;transform:translateX(-50%)"></div>
       <div></div>
-      <button class="modal-close-btn" onclick="closeModalById('detail-modal')">✕</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="fav-btn" id="detail-fav-btn" onclick="toggleFavorite()" title="Ajouter aux favoris">🤍</button>
+        <button class="modal-close-btn" onclick="closeModalById('detail-modal')">✕</button>
+      </div>
     </div>
 
     <!-- Entête lieu -->
@@ -1558,13 +1587,13 @@ function showPlaceDetail(name, cat, addr, rating) {
   document.getElementById('detail-meta').innerHTML = [
     addr ? `<div class="detail-meta-item">📍 ${addr}</div>` : '',
     rating ? `<div class="detail-meta-item">${rating}</div>` : '',
-    `<div class="detail-meta-item">👶 Kids friendly</div>`,
   ].join('');
   const override = placeOverrides[currentPlaceId] || {};
   document.getElementById('detail-desc').textContent =
     override.desc || 'Lieu sélectionné par la communauté Gambette. Parfait pour une sortie en famille à Bordeaux !';
 
   renderReviews(currentPlaceId);
+  updateFavBtn(name);
   document.getElementById('detail-modal').classList.add('open');
 }
 
@@ -1588,7 +1617,7 @@ function openDetail(id) {
 // ── REVIEWS ──
 let currentPlaceId = null;
 let currentStars = 0;
-const reviews = {}; // { placeId: [{author, stars, text, date}] }
+const reviews = {}; // Alimenté depuis Supabase
 
 function setStar(n) {
   currentStars = n;
@@ -1888,10 +1917,89 @@ function openMap() {
   setTimeout(() => leafletMap && leafletMap.invalidateSize(), 300);
 }
 
-// ── NAV ──
+// ── FAVORIS ──
+let favorites = JSON.parse(localStorage.getItem('gambette_favs') || '[]');
+
+function toggleFavorite() {
+  const btn = document.getElementById('detail-fav-btn');
+  const name = document.getElementById('detail-name').textContent;
+  const idx = favorites.findIndex(f => f.name === name);
+
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+    btn.textContent = '🤍';
+    btn.classList.remove('active');
+  } else {
+    const place = allPlaces.find(p => p.name === name);
+    if (place) {
+      favorites.push({ name: place.name, cat: place.cat, addr: place.addr, rating: place.rating });
+    }
+    btn.textContent = '❤️';
+    btn.classList.add('active');
+  }
+  localStorage.setItem('gambette_favs', JSON.stringify(favorites));
+  renderFavs();
+}
+
+function updateFavBtn(name) {
+  const btn = document.getElementById('detail-fav-btn');
+  if (!btn) return;
+  const isFav = favorites.some(f => f.name === name);
+  btn.textContent = isFav ? '❤️' : '🤍';
+  btn.classList.toggle('active', isFav);
+}
+
+function renderFavs() {
+  const container = document.getElementById('favs-list');
+  if (!container) return;
+  if (favorites.length === 0) {
+    container.innerHTML = `<div class="favs-empty">
+      <div class="favs-empty-icon">🤍</div>
+      Aucun favori pour l'instant.<br>
+      Appuie sur ❤️ dans une fiche lieu pour l'ajouter ici.
+    </div>`;
+    return;
+  }
+  container.innerHTML = favorites.map(p => {
+    const primaryCat = Array.isArray(p.cat) ? p.cat[0] : p.cat;
+    const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
+    return `<div class="event" style="cursor:pointer" onclick="showPlaceDetail('${escStr(p.name)}','${primaryCat}','${escStr(p.addr||'')}','${p.rating||''}')">
+      <div style="width:46px;height:52px;background:${cat.color};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${cat.emoji}</div>
+      <div class="event-info">
+        <div class="event-name">${p.name}</div>
+        <div class="event-sub">${p.addr || 'Bordeaux'}</div>
+        <div class="event-tags">
+          <span class="etag" style="color:${cat.textColor};background:${cat.color}">${cat.label}</span>
+          ${p.rating ? `<span class="etag">${p.rating}</span>` : ''}
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();removeFav('${escStr(p.name)}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--terracotta)">❤️</button>
+    </div>`;
+  }).join('');
+}
+
+function removeFav(name) {
+  favorites = favorites.filter(f => f.name !== name);
+  localStorage.setItem('gambette_favs', JSON.stringify(favorites));
+  renderFavs();
+}
 function setNav(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-'+tab)?.classList.add('active');
+
+  const favsSection = document.getElementById('favs-section');
+  const body = document.querySelector('.body');
+
+  if (tab === 'favs') {
+    Array.from(body.children).forEach(el => {
+      el.style.display = el.id === 'favs-section' ? 'block' : 'none';
+    });
+    renderFavs();
+  } else {
+    Array.from(body.children).forEach(el => {
+      el.style.display = el.id === 'favs-section' ? 'none' : '';
+    });
+  }
 }
 
 // ── FORM CATS (legacy) ──

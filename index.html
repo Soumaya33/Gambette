@@ -1285,13 +1285,23 @@ async function loadPlacesFromSupabase() {
         };
       });
       renderPlaceCards(allPlaces);
-      addLeafletMarkers(allPlaces);
+      // Attendre que la carte soit initialisée avant d'ajouter les marqueurs
+      waitForMapThenAddMarkers();
     } else {
       loadStaticPlaces();
     }
   } catch(e) {
     console.warn('Supabase indisponible, fallback', e);
     loadStaticPlaces();
+  }
+}
+
+function waitForMapThenAddMarkers() {
+  if (leafletMap) {
+    leafletMap.invalidateSize();
+    addLeafletMarkers(allPlaces);
+  } else {
+    setTimeout(waitForMapThenAddMarkers, 200);
   }
 }
 
@@ -1311,8 +1321,8 @@ function loadStaticPlaces() {
     { name:'Plage du Lac', cat:'eau', lat:44.8850, lng:-0.5730, addr:'Bordeaux Lac', rating:'⭐ 4.5' },
     { name:'Plage de Lacanau', cat:'eau', lat:44.9800, lng:-1.1900, addr:'Lacanau-Océan', rating:'⭐ 4.6' },
   ];
+  waitForMapThenAddMarkers();
   renderPlaceCards(allPlaces);
-  addLeafletMarkers(allPlaces);
 }
 
 function loadGoogleForSearch() {

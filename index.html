@@ -914,7 +914,7 @@ body {
     <div class="nav-icon">🗺️</div>
     <div class="nav-label">Carte</div>
   </div>
-  <div class="nav-item" id="nav-events" onclick="setNav('events')">
+  <div class="nav-item" id="nav-events" onclick="setNav('events');scrollToEvents()">
     <div class="nav-icon">📅</div>
     <div class="nav-label">Évènements</div>
   </div>
@@ -1276,6 +1276,7 @@ function startApp() {
     initLeafletMap();
     loadPlacesFromSupabase();
     loadGoogleForSearch();
+    loadEventsFromSupabase();
   }, 1800);
 }
 
@@ -1402,6 +1403,72 @@ function loadGoogleForSearch() {
   document.head.appendChild(s);
 }
 window.onGoogleReady = function() { console.log('Google Places pret'); };
+
+// ── CHARGER ÉVÉNEMENTS DEPUIS SUPABASE ──
+async function loadEventsFromSupabase() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const data = await supaFetch(`evenements?valide=eq.true&date_debut=gte.${today}&order=date_debut.asc&select=*&limit=20`);
+    if (data && data.length > 0) {
+      renderEvents(data);
+    }
+  } catch(e) {
+    console.warn('Événements Supabase indisponible', e);
+  }
+}
+
+function renderEvents(events) {
+  const container = document.getElementById('events-list');
+  if (!container || !events.length) return;
+
+  const MOIS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+
+  container.innerHTML = events.map(evt => {
+    const d = evt.date_debut ? new Date(evt.date_debut) : null;
+    const day = d ? d.getDate() : '?';
+    const month = d ? MOIS[d.getMonth()] : '';
+    const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
+    const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
+    const heure = evt.heure || '';
+    const tarif = evt.tarif || '';
+
+    return `<div class="event fade-in" onclick="showEventDetail('${escStr(evt.nom)}','${evt.categorie}','${escStr(addr)}','${heure}','${tarif}')">
+      <div class="event-date">
+        <div class="event-day">${day}</div>
+        <div class="event-month">${month}</div>
+      </div>
+      <div class="event-info">
+        <div class="event-name">${evt.nom}</div>
+        <div class="event-sub">${addr}${heure ? ' · ' + heure : ''}</div>
+        <div class="event-tags">
+          <span class="etag">${cat.emoji} ${cat.label}</span>
+          ${tarif ? `<span class="etag">${tarif}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showEventDetail(nom, cat, addr, heure, tarif) {
+  const catData = CATEGORIES[cat] || CATEGORIES.culture;
+  document.getElementById('detail-img').style.background =
+    `linear-gradient(135deg,${catData.textColor}44,${catData.textColor}88)`;
+  document.getElementById('detail-img').textContent = catData.emoji;
+  document.getElementById('detail-cat').innerHTML =
+    `<span style="background:${catData.color};color:${catData.textColor};font-size:10px;font-weight:500;padding:3px 8px;border-radius:10px">${catData.emoji} ${catData.label}</span>`;
+  document.getElementById('detail-name').textContent = nom;
+  document.getElementById('detail-meta').innerHTML = [
+    addr ? `<div class="detail-meta-item">📍 ${addr}</div>` : '',
+    heure ? `<div class="detail-meta-item">🕐 ${heure}</div>` : '',
+    tarif ? `<div class="detail-meta-item">💰 ${tarif}</div>` : '',
+  ].join('');
+  document.getElementById('detail-desc').textContent = 'Événement kids-friendly à Bordeaux. Proposé par la communauté Gambette.';
+  document.getElementById('review-name').value = '';
+  document.getElementById('review-text').value = '';
+  document.getElementById('detail-fav-btn').textContent = '🤍';
+  renderReviews(nom.toLowerCase().replace(/\s+/g,'-'));
+  document.getElementById('detail-modal').classList.add('open');
+}
 
 // ── RENDER CARDS ──
 function renderPlaceCards(places) {
@@ -1627,17 +1694,39 @@ function setStar(n) {
   });
 }
 
-function renderReviews(placeId) {
+async function renderReviews(placeId) {
   const list = reviews[placeId] || [];
   const container = document.getElementById('reviews-list');
   const count = document.getElementById('review-count');
-  count.textContent = list.length ? `${list.length} avis` : '';
 
-  if (list.length === 0) {
+  // Charger depuis Supabase si pas encore en cache
+  if (!reviews[placeId]) {
+    try {
+      const place = allPlaces.find(p => p.name.toLowerCase().replace(/\s+/g,'-') === placeId);
+      if (place && place.id) {
+        const data = await supaFetch(`avis?lieu_id=eq.${place.id}&order=created_at.desc&select=*`);
+        reviews[placeId] = (data || []).map(r => ({
+          author: r.auteur,
+          stars: r.note,
+          text: r.commentaire,
+          date: new Date(r.created_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }),
+        }));
+      } else {
+        reviews[placeId] = [];
+      }
+    } catch(e) {
+      reviews[placeId] = [];
+    }
+  }
+
+  const finalList = reviews[placeId] || [];
+  count.textContent = finalList.length ? `${finalList.length} avis` : '';
+
+  if (finalList.length === 0) {
     container.innerHTML = `<div class="review-empty">Sois le premier à laisser un avis ! 🌟</div>`;
     return;
   }
-  container.innerHTML = list.map(r => `
+  container.innerHTML = finalList.map(r => `
     <div class="review-item">
       <div class="review-header">
         <div class="review-author">${r.author}</div>
@@ -1677,6 +1766,9 @@ async function submitReview() {
   document.getElementById('review-name').value = '';
   document.getElementById('review-text').value = '';
   setStar(0);
+
+  // Vider le cache pour recharger depuis Supabase
+  delete reviews[currentPlaceId];
   renderReviews(currentPlaceId);
 
   const btn = document.querySelector('#detail-modal .btn-submit');
@@ -1999,6 +2091,14 @@ function setNav(tab) {
     Array.from(body.children).forEach(el => {
       el.style.display = el.id === 'favs-section' ? 'none' : '';
     });
+  }
+}
+
+function scrollToEvents() {
+  const el = document.getElementById('events-list');
+  if (el) {
+    // Petit délai pour laisser le DOM se stabiliser
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   }
 }
 

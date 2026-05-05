@@ -675,6 +675,74 @@ body {
   font-size:9px; font-weight:500; padding:3px 7px;
   border-radius:10px; background:var(--cream2); color:var(--charcoal);
 }
+
+/* ── EVENTS PAGE ── */
+.event-img-card {
+  width:100%; height:160px; object-fit:cover;
+  border-radius:12px 12px 0 0; display:block;
+}
+.event-img-placeholder {
+  width:100%; height:140px;
+  border-radius:12px 12px 0 0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:44px;
+}
+.event-card-full {
+  background:var(--white); border-radius:16px; overflow:hidden;
+  margin-bottom:14px; cursor:pointer;
+  box-shadow:0 2px 12px rgba(28,28,26,.07);
+  transition:transform .2s;
+}
+.event-card-full:active { transform:scale(.98); }
+.event-card-body { padding:13px 15px 15px; }
+.event-card-title {
+  font-family:'Fraunces',serif;
+  font-size:16px; font-weight:600; line-height:1.2;
+  margin-bottom:5px; color:var(--charcoal);
+}
+.event-card-meta { font-size:11px; font-weight:300; color:var(--muted); margin-bottom:8px; }
+
+.events-filters {
+  display:flex; gap:8px; overflow-x:auto;
+  padding:0 0 14px; scrollbar-width:none;
+}
+.events-filters::-webkit-scrollbar { display:none; }
+.ef-btn {
+  flex-shrink:0; padding:7px 14px; border-radius:20px;
+  border:1.5px solid var(--sand); background:transparent;
+  font-family:'DM Sans',sans-serif; font-size:12px;
+  font-weight:500; color:var(--muted); cursor:pointer;
+  transition:all .15s; white-space:nowrap;
+}
+.ef-btn.active { background:var(--forest); border-color:var(--forest); color:var(--cream); }
+
+/* ── DETAIL EVENT ── */
+.detail-event-img {
+  width:calc(100% + 44px); margin:0 -22px 18px;
+  height:200px; object-fit:cover; display:block;
+}
+.detail-event-placeholder {
+  width:calc(100% + 44px); margin:0 -22px 18px;
+  height:200px; display:flex; align-items:center;
+  justify-content:center; font-size:64px;
+}
+.detail-info-block { margin-bottom:16px; }
+.detail-info-row {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:9px 0; border-bottom:1px solid var(--cream2);
+}
+.detail-info-row:last-child { border-bottom:none; }
+.detail-info-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
+.detail-info-label { font-size:10px; font-weight:500; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.detail-info-val { font-size:13px; font-weight:300; color:var(--charcoal); line-height:1.5; }
+.detail-link-btn {
+  display:block; width:100%; background:var(--forest);
+  color:var(--cream); border:none; border-radius:13px;
+  padding:14px; font-family:'DM Sans',sans-serif;
+  font-size:14px; font-weight:500; cursor:pointer;
+  text-align:center; text-decoration:none; margin-top:16px;
+}
+.detail-link-btn:active { opacity:.85; }
 </style>
 </head>
 <body>
@@ -838,7 +906,7 @@ body {
   <!-- EVENTS -->
   <div class="sec-hd" style="margin-top:28px">
     <div class="sec-title">Évènements à venir</div>
-    <button class="sec-link">Tout voir →</button>
+    <button class="sec-link" onclick="setNav('events');scrollToEvents()">Voir tout →</button>
   </div>
   <div id="events-list">
     <div class="event fade-in" onclick="openDetail('event1')">
@@ -897,6 +965,35 @@ body {
       <div class="sec-title">❤️ Mes favoris</div>
     </div>
     <div id="favs-list"></div>
+  </div>
+
+  <!-- PAGE ÉVÉNEMENTS (masquée par défaut) -->
+  <div id="events-page" style="display:none">
+    <div class="sec-hd" style="margin-top:8px">
+      <div class="sec-title">📅 Tous les évènements</div>
+    </div>
+
+    <!-- Filtres catégories -->
+    <div class="events-filters" id="ep-cat-filters">
+      <button class="ef-btn active" onclick="filterEventsCat(this,'all')">Tout</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'culture')">🎭 Culture</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'jeux_ext')">🌳 Jeux ext.</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'jeux_int')">🎲 Jeux int.</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'eau')">🌊 Eau</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'apero')">🍷 Apéro</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'resto')">🍕 Resto</button>
+    </div>
+
+    <!-- Filtres âge -->
+    <div class="events-filters" id="ep-age-filters" style="padding-bottom:8px">
+      <button class="ef-btn active" onclick="filterEventsAge(this,'all')">Tous âges</button>
+      <button class="ef-btn" onclick="filterEventsAge(this,'0-3')">👶 0–3 ans</button>
+      <button class="ef-btn" onclick="filterEventsAge(this,'3-6')">🧒 3–6 ans</button>
+      <button class="ef-btn" onclick="filterEventsAge(this,'6-12')">🧑 6–12 ans</button>
+      <button class="ef-btn" onclick="filterEventsAge(this,'12+')">👦 12+ ans</button>
+    </div>
+
+    <div id="events-page-list" style="margin-top:8px"></div>
   </div>
 
 </div>
@@ -1233,6 +1330,35 @@ body {
   </div>
 </div>
 
+<!-- EVENT DETAIL MODAL -->
+<div class="modal-overlay" id="event-detail-modal" onclick="closeModal(event,'event-detail-modal')">
+  <div class="modal" style="padding-bottom:40px;padding-left:0;padding-right:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 4px;position:relative">
+      <div style="width:40px;height:4px;background:var(--sand);border-radius:2px;position:absolute;left:50%;transform:translateX(-50%)"></div>
+      <div></div>
+      <button class="modal-close-btn" onclick="closeModalById('event-detail-modal')" style="margin-right:0">✕</button>
+    </div>
+
+    <!-- Image ou placeholder -->
+    <div id="evd-img-wrap"></div>
+
+    <div style="padding:0 22px">
+      <div id="evd-cat" style="margin-bottom:6px"></div>
+      <div id="evd-name" style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1.2;margin-bottom:14px;color:var(--charcoal)"></div>
+
+      <div class="detail-info-block" id="evd-infos"></div>
+
+      <div id="evd-desc" style="font-size:14px;font-weight:300;color:var(--charcoal);line-height:1.65;margin-top:14px"></div>
+
+      <div id="evd-conditions" style="font-size:12px;font-weight:300;color:var(--muted);margin-top:10px;font-style:italic"></div>
+
+      <a id="evd-link" href="#" target="_blank" class="detail-link-btn" style="display:none">
+        🎟️ Voir & réserver
+      </a>
+    </div>
+  </div>
+</div>
+
 <script>
 const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
 
@@ -1404,35 +1530,45 @@ function loadGoogleForSearch() {
 }
 window.onGoogleReady = function() { console.log('Google Places pret'); };
 
-// ── CHARGER ÉVÉNEMENTS DEPUIS SUPABASE ──
+// ── ÉVÉNEMENTS ──
+let allEvents = [];
+let evPageCat = 'all';
+let evPageAge = 'all';
+
 async function loadEventsFromSupabase() {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const data = await supaFetch(`evenements?valide=eq.true&date_debut=gte.${today}&order=date_debut.asc&select=*&limit=20`);
+    const data = await supaFetch(`evenements?valide=eq.true&date_debut=gte.${today}&order=date_debut.asc&select=*&limit=100`);
     if (data && data.length > 0) {
-      renderEvents(data);
+      allEvents = data;
+      renderHomeEvents(data.slice(0, 5));
+      renderEventsPage();
     }
   } catch(e) {
     console.warn('Événements Supabase indisponible', e);
   }
 }
 
-function renderEvents(events) {
+const MOIS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+
+// Affichage home — liste compacte, pas d'image, max 5
+function renderHomeEvents(events) {
   const container = document.getElementById('events-list');
-  if (!container || !events.length) return;
-
-  const MOIS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-
+  if (!container) return;
+  if (!events.length) {
+    container.innerHTML = `<div class="loading-card"><div style="font-size:28px">📅</div><div class="loading-text">Aucun évènement à venir</div></div>`;
+    return;
+  }
   container.innerHTML = events.map(evt => {
-    const d = evt.date_debut ? new Date(evt.date_debut) : null;
+    const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
     const day = d ? d.getDate() : '?';
     const month = d ? MOIS[d.getMonth()] : '';
     const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
     const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
     const heure = evt.heure || '';
     const tarif = evt.tarif || '';
-
-    return `<div class="event fade-in" onclick="showEventDetail('${escStr(evt.nom)}','${evt.categorie}','${escStr(addr)}','${heure}','${tarif}')">
+    const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
+    return `<div class="event fade-in" onclick="openEventDetail('${evtJson}')">
       <div class="event-date">
         <div class="event-day">${day}</div>
         <div class="event-month">${month}</div>
@@ -1443,31 +1579,138 @@ function renderEvents(events) {
         <div class="event-tags">
           <span class="etag">${cat.emoji} ${cat.label}</span>
           ${tarif ? `<span class="etag">${tarif}</span>` : ''}
+          ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
-function showEventDetail(nom, cat, addr, heure, tarif) {
-  const catData = CATEGORIES[cat] || CATEGORIES.culture;
-  document.getElementById('detail-img').style.background =
-    `linear-gradient(135deg,${catData.textColor}44,${catData.textColor}88)`;
-  document.getElementById('detail-img').textContent = catData.emoji;
-  document.getElementById('detail-cat').innerHTML =
-    `<span style="background:${catData.color};color:${catData.textColor};font-size:10px;font-weight:500;padding:3px 8px;border-radius:10px">${catData.emoji} ${catData.label}</span>`;
-  document.getElementById('detail-name').textContent = nom;
-  document.getElementById('detail-meta').innerHTML = [
-    addr ? `<div class="detail-meta-item">📍 ${addr}</div>` : '',
-    heure ? `<div class="detail-meta-item">🕐 ${heure}</div>` : '',
-    tarif ? `<div class="detail-meta-item">💰 ${tarif}</div>` : '',
-  ].join('');
-  document.getElementById('detail-desc').textContent = 'Événement kids-friendly à Bordeaux. Proposé par la communauté Gambette.';
-  document.getElementById('review-name').value = '';
-  document.getElementById('review-text').value = '';
-  document.getElementById('detail-fav-btn').textContent = '🤍';
-  renderReviews(nom.toLowerCase().replace(/\s+/g,'-'));
-  document.getElementById('detail-modal').classList.add('open');
+// Affichage page événements — cartes avec image
+function renderEventsPage() {
+  const container = document.getElementById('events-page-list');
+  if (!container) return;
+
+  let filtered = allEvents;
+  if (evPageCat !== 'all') filtered = filtered.filter(e => e.categorie === evPageCat);
+  if (evPageAge !== 'all') {
+    const [min, max] = evPageAge === '12+' ? [12, 99] : evPageAge.split('-').map(Number);
+    filtered = filtered.filter(e => {
+      if (e.age_min === null && e.age_max === null) return true;
+      const eMin = e.age_min ?? 0;
+      const eMax = e.age_max ?? 99;
+      return eMin <= (max ?? 99) && eMax >= min;
+    });
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="loading-card"><div style="font-size:28px">🔍</div><div class="loading-text">Aucun évènement pour ces filtres</div></div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(evt => {
+    const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
+    const dateStr = d ? `${d.getDate()} ${MOIS[d.getMonth()]}${evt.date_fin && evt.date_fin !== evt.date_debut ? ' → ' + new Date(evt.date_fin + 'T12:00:00').getDate() + ' ' + MOIS[new Date(evt.date_fin + 'T12:00:00').getMonth()] : ''}` : '';
+    const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
+    const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
+    const heure = evt.heure || '';
+    const tarif = evt.tarif || '';
+    const hasImg = evt.image_url && !evt.image_url.endsWith('/');
+    const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
+
+    return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
+      ${hasImg
+        ? `<img class="event-img-card" src="${evt.image_url}" alt="${evt.nom}" onerror="this.parentNode.querySelector('.event-img-placeholder').style.display='flex';this.style.display='none'">`
+        : ''}
+      <div class="event-img-placeholder" style="background:${cat.textColor}22;${hasImg ? 'display:none' : ''}">${cat.emoji}</div>
+      <div class="event-card-body">
+        <div class="event-card-title">${evt.nom}</div>
+        <div class="event-card-meta">
+          ${dateStr ? '📅 ' + dateStr : ''}
+          ${heure ? ' · 🕐 ' + heure : ''}
+          ${addr ? ' · 📍 ' + addr : ''}
+        </div>
+        <div class="event-card-tags event-tags">
+          <span class="etag">${cat.emoji} ${cat.label}</span>
+          ${tarif ? `<span class="etag">${tarif}</span>` : ''}
+          ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Filtres page événements
+function filterEventsCat(btn, cat) {
+  document.querySelectorAll('#ep-cat-filters .ef-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  evPageCat = cat;
+  renderEventsPage();
+}
+function filterEventsAge(btn, age) {
+  document.querySelectorAll('#ep-age-filters .ef-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  evPageAge = age;
+  renderEventsPage();
+}
+
+// Fiche événement enrichie
+function openEventDetail(evtJson) {
+  const evt = JSON.parse(decodeURIComponent(evtJson));
+  const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
+  const hasImg = evt.image_url && !evt.image_url.endsWith('/');
+
+  // Image ou placeholder
+  document.getElementById('evd-img-wrap').innerHTML = hasImg
+    ? `<img class="detail-event-img" src="${evt.image_url}" alt="${evt.nom}" onerror="this.style.display='none';document.getElementById('evd-ph').style.display='flex'">`
+    + `<div id="evd-ph" class="detail-event-placeholder" style="background:${cat.textColor}22;display:none">${cat.emoji}</div>`
+    : `<div class="detail-event-placeholder" style="background:${cat.textColor}22">${cat.emoji}</div>`;
+
+  // Catégorie
+  document.getElementById('evd-cat').innerHTML =
+    `<span style="background:${cat.color};color:${cat.textColor};font-size:10px;font-weight:500;padding:3px 10px;border-radius:10px">${cat.emoji} ${cat.label}</span>`;
+
+  // Nom
+  document.getElementById('evd-name').textContent = evt.nom;
+
+  // Infos structurées
+  const d1 = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
+  const d2 = evt.date_fin && evt.date_fin !== evt.date_debut ? new Date(evt.date_fin + 'T12:00:00') : null;
+  const dateStr = d1 ? `${d1.getDate()} ${MOIS[d1.getMonth()]} ${d1.getFullYear()}${d2 ? ' → ' + d2.getDate() + ' ' + MOIS[d2.getMonth()] + ' ' + d2.getFullYear() : ''}` : null;
+
+  const rows = [
+    dateStr ? { icon:'📅', label:'Date', val: dateStr + (evt.heure ? ' · ' + evt.heure : '') } : null,
+    evt.adresse ? { icon:'📍', label:'Lieu', val: evt.adresse } : null,
+    (evt.age_min !== null && evt.age_min !== undefined) ? { icon:'👶', label:'Âge', val: `${evt.age_min}${evt.age_max && evt.age_max < 99 ? ' – ' + evt.age_max : '+'} ans` } : null,
+    evt.tarif ? { icon:'💰', label:'Tarif', val: evt.tarif } : null,
+    evt.conditions_acces ? { icon:'ℹ️', label:'Conditions', val: evt.conditions_acces } : null,
+  ].filter(Boolean);
+
+  document.getElementById('evd-infos').innerHTML = `<div class="detail-info-block">` +
+    rows.map(r => `<div class="detail-info-row">
+      <div class="detail-info-icon">${r.icon}</div>
+      <div><div class="detail-info-label">${r.label}</div><div class="detail-info-val">${r.val}</div></div>
+    </div>`).join('') + `</div>`;
+
+  // Description
+  const desc = evt.description || '';
+  // Nettoyer le markdown basique
+  const cleanDesc = desc.replace(/\*\*(.*?)\*\*/g, '$1').replace(/#{1,3}\s/g, '').replace(/\n/g, ' ').trim();
+  document.getElementById('evd-desc').textContent = cleanDesc ? cleanDesc.slice(0, 400) + (cleanDesc.length > 400 ? '…' : '') : '';
+
+  // Lien réservation
+  const linkEl = document.getElementById('evd-link');
+  const lien = evt.lien_reservation || evt.lien_evenement;
+  if (lien) {
+    linkEl.href = lien;
+    linkEl.style.display = 'block';
+    linkEl.textContent = evt.lien_reservation ? '🎟️ Voir & réserver' : '🔗 Voir sur OpenAgenda';
+  } else {
+    linkEl.style.display = 'none';
+  }
+
+  document.getElementById('event-detail-modal').classList.add('open');
+  document.body.classList.add('modal-open');
 }
 
 // ── RENDER CARDS ──
@@ -2080,25 +2323,49 @@ function setNav(tab) {
   document.getElementById('nav-'+tab)?.classList.add('active');
 
   const favsSection = document.getElementById('favs-section');
+  const eventsPage = document.getElementById('events-page');
   const body = document.querySelector('.body');
+
+  // Réinitialiser tous les enfants
+  Array.from(body.children).forEach(el => {
+    if (el.id === 'favs-section' || el.id === 'events-page') {
+      el.style.display = 'none';
+    } else {
+      el.style.display = '';
+    }
+  });
 
   if (tab === 'favs') {
     Array.from(body.children).forEach(el => {
       el.style.display = el.id === 'favs-section' ? 'block' : 'none';
     });
     renderFavs();
+  } else if (tab === 'events') {
+    Array.from(body.children).forEach(el => {
+      el.style.display = el.id === 'events-page' ? 'block' : 'none';
+    });
+    renderEventsPage();
   } else {
     Array.from(body.children).forEach(el => {
-      el.style.display = el.id === 'favs-section' ? 'none' : '';
+      if (el.id === 'favs-section' || el.id === 'events-page') {
+        el.style.display = 'none';
+      } else {
+        el.style.display = '';
+      }
     });
   }
 }
 
 function scrollToEvents() {
-  const el = document.getElementById('events-list');
-  if (el) {
-    // Petit délai pour laisser le DOM se stabiliser
-    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  // Sur la page home, scroll vers la section
+  // Sur l'onglet événements, affiche la page complète
+  const eventsPage = document.getElementById('events-page');
+  if (eventsPage && eventsPage.style.display !== 'none') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    // Basculer vers la page événements
+    setNav('events');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 

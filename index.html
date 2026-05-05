@@ -976,12 +976,13 @@ body {
     <!-- Filtres catégories -->
     <div class="events-filters" id="ep-cat-filters">
       <button class="ef-btn active" onclick="filterEventsCat(this,'all')">Tout</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'culture')">🎭 Culture</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'jeux_ext')">🌳 Jeux ext.</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'jeux_int')">🎲 Jeux int.</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'eau')">🌊 Eau</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'apero')">🍷 Apéro</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'resto')">🍕 Resto</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'musique')">🎵 Musique</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'theatre')">🎭 Théâtre</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'sport')">⚽ Sport</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'expos')">🖼️ Expositions</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'sciences')">🔬 Sciences</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'ateliers')">🎨 Ateliers</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'nature')">🌿 Nature</button>
     </div>
 
     <!-- Filtres âge -->
@@ -1387,12 +1388,21 @@ async function supaFetch(path, opts) {
 }
 
 const CATEGORIES = {
-  jeux_ext: { label:'Jeux extérieur',  emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
-  jeux_int: { label:'Jeux intérieur',  emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
-  culture:  { label:'Culture & biblio', emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
-  apero:    { label:'Apéro parents',   emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
-  resto:    { label:'Resto kids',       emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
-  eau:      { label:"Au bord de l'eau", emoji:'🌊', color:'#E6F1FB', textColor:'#185FA5' },
+  // ── Lieux ──
+  jeux_ext: { label:'Jeux extérieur',        emoji:'🌳', color:'#E8F4EF', textColor:'#0F6E56' },
+  jeux_int: { label:'Jeux intérieur',        emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
+  culture:  { label:'Culture & biblio',      emoji:'🎭', color:'#F3EBF8', textColor:'#7B4FA6' },
+  apero:    { label:'Apéro parents',         emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
+  resto:    { label:'Resto kids',            emoji:'🍕', color:'#FBE9E7', textColor:'#993C1D' },
+  eau:      { label:"Au bord de l'eau",      emoji:'🌊', color:'#E6F1FB', textColor:'#185FA5' },
+  // ── Événements ──
+  musique:  { label:'Musique & concerts',    emoji:'🎵', color:'#F0E8FB', textColor:'#6B3FA0' },
+  theatre:  { label:'Théâtre & spectacle',   emoji:'🎭', color:'#FDF0F8', textColor:'#A03F7A' },
+  sport:    { label:'Sport & outdoor',       emoji:'⚽', color:'#E8F4EF', textColor:'#0F6E56' },
+  expos:    { label:'Expositions & musées',  emoji:'🖼️', color:'#FDF3E7', textColor:'#8B5E00' },
+  sciences: { label:'Sciences & apprentissage', emoji:'🔬', color:'#E8F0FB', textColor:'#1A4FA0' },
+  ateliers: { label:'Ateliers & créatif',    emoji:'🎨', color:'#FEF0E8', textColor:'#A04F1A' },
+  nature:   { label:'Nature & balades',      emoji:'🌿', color:'#EAFAF0', textColor:'#1A7A40' },
 };
 
 let leafletMap = null, leafletMarkers = [], allPlaces = [];
@@ -1632,14 +1642,24 @@ function renderEventsPage() {
 
   container.innerHTML = filtered.map(evt => {
     const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
-    const dateStr = d ? `${d.getDate()} ${MOIS[d.getMonth()]}${evt.date_fin && evt.date_fin !== evt.date_debut ? ' → ' + new Date(evt.date_fin + 'T12:00:00').getDate() + ' ' + MOIS[new Date(evt.date_fin + 'T12:00:00').getMonth()] : ''}` : '';
     const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
     const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
     const heure = evt.heure || '';
     const tarif = evt.tarif || '';
+    const hasImg = evt.image_url && evt.image_url.startsWith('http');
     const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
+    const uid = 'ev_' + Math.random().toString(36).slice(2,8);
 
     return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
+      ${hasImg
+        ? `<div style="position:relative;height:160px;overflow:hidden;border-radius:12px 12px 0 0">
+             <img id="${uid}" src="${evt.image_url}" alt="${evt.nom}"
+               style="width:100%;height:160px;object-fit:cover;display:block"
+               onerror="document.getElementById('${uid}').style.display='none';document.getElementById('ph_${uid}').style.display='flex'">
+             <div id="ph_${uid}" class="event-img-placeholder" style="background:${cat.textColor}22;display:none;position:absolute;inset:0;height:auto">${cat.emoji}</div>
+           </div>`
+        : `<div class="event-img-placeholder" style="background:${cat.textColor}22">${cat.emoji}</div>`
+      }
       <div class="event-card-body">
         <div style="display:flex;gap:12px;align-items:flex-start">
           <div class="event-date" style="flex-shrink:0">

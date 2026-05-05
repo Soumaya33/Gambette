@@ -767,7 +767,7 @@ body {
       <div class="btn-icon" onclick="openAdmin()">👤</div>
     </div>
   </div>
-  <div class="header-city">📍 Bordeaux Métropole</div>
+  <div class="header-city" id="header-city">📍 Bordeaux Métropole</div>
   <div class="header-title">Où sortir <strong>avec les enfants ?</strong></div>
   <div class="search-wrap" style="padding:0 0 16px;">
     <div class="search-box">
@@ -825,8 +825,8 @@ body {
 
   <!-- NEAR ME -->
   <div class="sec-hd" style="margin-top:20px">
-    <div class="sec-title">Près de chez toi</div>
-    <button class="sec-link">Voir tout →</button>
+    <div class="sec-title" id="near-me-title">Près de chez toi</div>
+    <button class="sec-link" id="geo-btn" onclick="requestGeolocation()">📍 Me localiser</button>
   </div>
   <div class="hscroll" id="places-scroll">
     <div class="loading-card" style="width:162px;flex-shrink:0;height:180px;justify-content:center">
@@ -1788,7 +1788,11 @@ function renderPlaceCards(places) {
         <div class="place-card-cat" style="color:${cat.textColor}">${cat.label}</div>
         <div class="place-card-name">${truncate(p.name, 24)}</div>
         <div class="place-card-footer">
-          <span class="place-card-dist">${truncate(p.addr||'Bordeaux', 16)}</span>
+          <span class="place-card-dist">${
+            (userLat && p.distance && p.distance < 900)
+              ? '📍 ' + formatDistance(p.distance)
+              : truncate(p.addr||'Bordeaux', 16)
+          }</span>
           ${p.rating ? `<span class="tag tag-free">${p.rating}</span>` : ''}
         </div>
       </div>
@@ -1799,7 +1803,93 @@ function renderPlaceCards(places) {
 function escStr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : (s||''); }
 
-// ── TOGGLE FILTRES AVANCÉS ──
+// ── GÉOLOCALISATION ──
+let userLat = null, userLng = null, userMarker = null;
+
+function requestGeolocation() {
+  const btn = document.getElementById('geo-btn');
+  btn.textContent = '⏳ Localisation…';
+  btn.style.color = 'var(--gold)';
+
+  if (!navigator.geolocation) {
+    btn.textContent = '❌ Non supporté';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      onGeolocationSuccess();
+    },
+    err => {
+      btn.textContent = '📍 Me localiser';
+      btn.style.color = '';
+      let msg = 'Localisation refusée';
+      if (err.code === 1) msg = 'Accès refusé';
+      else if (err.code === 2) msg = 'Position indisponible';
+      showGeoToast('⚠️ ' + msg);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+function onGeolocationSuccess() {
+  const btn = document.getElementById('geo-btn');
+  btn.textContent = '✅ Localisé';
+  btn.style.color = 'var(--ok, #2D7A4F)';
+
+  // Mettre à jour le header
+  document.getElementById('header-city').textContent = '📍 Autour de toi';
+  document.getElementById('near-me-title').textContent = 'Autour de toi';
+
+  // Marqueur position utilisateur sur la carte
+  if (leafletMap) {
+    if (userMarker) leafletMap.removeLayer(userMarker);
+    userMarker = L.marker([userLat, userLng], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="background:#4A90E2;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(74,144,226,.6)"></div>`,
+        iconSize: [14,14], iconAnchor: [7,7]
+      })
+    }).addTo(leafletMap).bindTooltip('Vous êtes ici', { permanent:false });
+    leafletMap.setView([userLat, userLng], 14);
+  }
+
+  // Trier les lieux par distance
+  sortPlacesByDistance();
+  renderPlaceCards(allPlaces);
+  addLeafletMarkers(allPlaces);
+}
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function sortPlacesByDistance() {
+  if (!userLat || !userLng) return;
+  allPlaces.forEach(p => {
+    p.distance = (p.lat && p.lng)
+      ? haversineKm(userLat, userLng, p.lat, p.lng)
+      : 999;
+  });
+  allPlaces.sort((a, b) => a.distance - b.distance);
+}
+
+function formatDistance(km) {
+  if (km < 1) return Math.round(km * 1000) + ' m';
+  return km.toFixed(1) + ' km';
+}
+
+function showGeoToast(msg) {
+  // Réutilise le système de toast existant si présent
+  console.warn(msg);
+}
 function toggleMoreFilters() {
   const panel = document.getElementById('advanced-filters');
   const btn = document.getElementById('btn-more-filters');

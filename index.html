@@ -1336,7 +1336,10 @@ body {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 4px;position:relative">
       <div style="width:40px;height:4px;background:var(--sand);border-radius:2px;position:absolute;left:50%;transform:translateX(-50%)"></div>
       <div></div>
-      <button class="modal-close-btn" onclick="closeModalById('event-detail-modal')" style="margin-right:0">✕</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="fav-btn" id="event-fav-btn" onclick="toggleEventFavorite()" title="Ajouter aux favoris">🤍</button>
+        <button class="modal-close-btn" onclick="closeModalById('event-detail-modal')" style="margin-right:0">✕</button>
+      </div>
     </div>
 
     <!-- Image ou placeholder -->
@@ -1538,10 +1541,29 @@ let evPageAge = 'all';
 async function loadEventsFromSupabase() {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const data = await supaFetch(`evenements?valide=eq.true&date_debut=gte.${today}&order=date_debut.asc&select=*&limit=100`);
+    // On récupère tout ce qui n'est pas clairement passé
+    // Le filtrage fin est fait côté JS pour gérer date_fin correctement
+    const data = await supaFetch(`evenements?valide=eq.true&order=date_debut.asc&select=*&limit=200`);
     if (data && data.length > 0) {
-      allEvents = data;
-      renderHomeEvents(data.slice(0, 5));
+      // Filtre : garder uniquement les événements pas encore terminés
+      const actifs = data.filter(evt => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (evt.date_fin) {
+          // Événement multi-jours : disparaît après le dernier jour
+          const fin = new Date(evt.date_fin + 'T23:59:59');
+          return fin >= today;
+        } else if (evt.date_debut) {
+          // Sans date_fin : disparaît le lendemain de date_debut
+          const debut = new Date(evt.date_debut + 'T23:59:59');
+          return debut >= today;
+        }
+        return true; // Pas de date → on garde
+      });
+
+      allEvents = actifs;
+      renderHomeEvents(actifs.slice(0, 5));
       renderEventsPage();
     }
   } catch(e) {
@@ -1615,28 +1637,30 @@ function renderEventsPage() {
     const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
     const heure = evt.heure || '';
     const tarif = evt.tarif || '';
-    const hasImg = evt.image_url && !evt.image_url.endsWith('/');
     const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
 
     return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
-      ${hasImg
-        ? `<img class="event-img-card" src="${evt.image_url}" alt="${evt.nom}" onerror="this.parentNode.querySelector('.event-img-placeholder').style.display='flex';this.style.display='none'">`
-        : ''}
-      <div class="event-img-placeholder" style="background:${cat.textColor}22;${hasImg ? 'display:none' : ''}">${cat.emoji}</div>
       <div class="event-card-body">
-        <div class="event-card-title">${evt.nom}</div>
-        <div class="event-card-meta">
-          ${dateStr ? '📅 ' + dateStr : ''}
-          ${heure ? ' · 🕐 ' + heure : ''}
-          ${addr ? ' · 📍 ' + addr : ''}
-        </div>
-        <div class="event-card-tags event-tags">
-          <span class="etag">${cat.emoji} ${cat.label}</span>
-          ${tarif ? `<span class="etag">${tarif}</span>` : ''}
-          ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div class="event-date" style="flex-shrink:0">
+            <div class="event-day">${d ? d.getDate() : '?'}</div>
+            <div class="event-month">${d ? MOIS[d.getMonth()] : ''}</div>
+          </div>
+          <div style="flex:1">
+            <div class="event-card-title">${evt.nom}</div>
+            <div class="event-card-meta">
+              ${addr ? '📍 ' + addr : ''}${heure ? ' · 🕐 ' + heure : ''}
+            </div>
+            <div class="event-card-tags event-tags">
+              <span class="etag">${cat.emoji} ${cat.label}</span>
+              ${tarif ? `<span class="etag">${tarif}</span>` : ''}
+              ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
+  }).join('');
   }).join('');
 }
 
@@ -1660,11 +1684,11 @@ function openEventDetail(evtJson) {
   const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
   const hasImg = evt.image_url && !evt.image_url.endsWith('/');
 
-  // Image ou placeholder
-  document.getElementById('evd-img-wrap').innerHTML = hasImg
-    ? `<img class="detail-event-img" src="${evt.image_url}" alt="${evt.nom}" onerror="this.style.display='none';document.getElementById('evd-ph').style.display='flex'">`
-    + `<div id="evd-ph" class="detail-event-placeholder" style="background:${cat.textColor}22;display:none">${cat.emoji}</div>`
-    : `<div class="detail-event-placeholder" style="background:${cat.textColor}22">${cat.emoji}</div>`;
+  currentEventForFav = evt;
+
+  // Header coloré sans image
+  document.getElementById('evd-img-wrap').innerHTML =
+    `<div class="detail-event-placeholder" style="background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66)">${cat.emoji}</div>`;
 
   // Catégorie
   document.getElementById('evd-cat').innerHTML =
@@ -1711,6 +1735,7 @@ function openEventDetail(evtJson) {
 
   document.getElementById('event-detail-modal').classList.add('open');
   document.body.classList.add('modal-open');
+  updateEventFavBtn(evt.nom);
 }
 
 // ── RENDER CARDS ──
@@ -2254,25 +2279,38 @@ function openMap() {
 
 // ── FAVORIS ──
 let favorites = JSON.parse(localStorage.getItem('gambette_favs') || '[]');
+let eventFavorites = JSON.parse(localStorage.getItem('gambette_event_favs') || '[]');
+let currentEventForFav = null; // Stocke l'événement affiché dans la modal
 
 function toggleFavorite() {
   const btn = document.getElementById('detail-fav-btn');
   const name = document.getElementById('detail-name').textContent;
   const idx = favorites.findIndex(f => f.name === name);
-
   if (idx >= 0) {
     favorites.splice(idx, 1);
-    btn.textContent = '🤍';
-    btn.classList.remove('active');
+    btn.textContent = '🤍'; btn.classList.remove('active');
   } else {
     const place = allPlaces.find(p => p.name === name);
-    if (place) {
-      favorites.push({ name: place.name, cat: place.cat, addr: place.addr, rating: place.rating });
-    }
-    btn.textContent = '❤️';
-    btn.classList.add('active');
+    if (place) favorites.push({ name: place.name, cat: place.cat, addr: place.addr, rating: place.rating });
+    btn.textContent = '❤️'; btn.classList.add('active');
   }
   localStorage.setItem('gambette_favs', JSON.stringify(favorites));
+  renderFavs();
+}
+
+function toggleEventFavorite() {
+  const btn = document.getElementById('event-fav-btn');
+  if (!currentEventForFav) return;
+  const nom = currentEventForFav.nom;
+  const idx = eventFavorites.findIndex(f => f.nom === nom);
+  if (idx >= 0) {
+    eventFavorites.splice(idx, 1);
+    btn.textContent = '🤍'; btn.classList.remove('active');
+  } else {
+    eventFavorites.push(currentEventForFav);
+    btn.textContent = '❤️'; btn.classList.add('active');
+  }
+  localStorage.setItem('gambette_event_favs', JSON.stringify(eventFavorites));
   renderFavs();
 }
 
@@ -2284,38 +2322,90 @@ function updateFavBtn(name) {
   btn.classList.toggle('active', isFav);
 }
 
+function updateEventFavBtn(nom) {
+  const btn = document.getElementById('event-fav-btn');
+  if (!btn) return;
+  const isFav = eventFavorites.some(f => f.nom === nom);
+  btn.textContent = isFav ? '❤️' : '🤍';
+  btn.classList.toggle('active', isFav);
+}
+
 function renderFavs() {
   const container = document.getElementById('favs-list');
   if (!container) return;
-  if (favorites.length === 0) {
+
+  const totalFavs = favorites.length + eventFavorites.length;
+  if (totalFavs === 0) {
     container.innerHTML = `<div class="favs-empty">
       <div class="favs-empty-icon">🤍</div>
       Aucun favori pour l'instant.<br>
-      Appuie sur ❤️ dans une fiche lieu pour l'ajouter ici.
+      Appuie sur ❤️ dans une fiche lieu ou événement.
     </div>`;
     return;
   }
-  container.innerHTML = favorites.map(p => {
-    const primaryCat = Array.isArray(p.cat) ? p.cat[0] : p.cat;
-    const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
-    return `<div class="event" style="cursor:pointer" onclick="showPlaceDetail('${escStr(p.name)}','${primaryCat}','${escStr(p.addr||'')}','${p.rating||''}')">
-      <div style="width:46px;height:52px;background:${cat.color};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${cat.emoji}</div>
-      <div class="event-info">
-        <div class="event-name">${p.name}</div>
-        <div class="event-sub">${p.addr || 'Bordeaux'}</div>
-        <div class="event-tags">
-          <span class="etag" style="color:${cat.textColor};background:${cat.color}">${cat.label}</span>
-          ${p.rating ? `<span class="etag">${p.rating}</span>` : ''}
+
+  let html = '';
+
+  // Lieux favoris
+  if (favorites.length > 0) {
+    html += `<div style="font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">📍 Lieux</div>`;
+    html += favorites.map(p => {
+      const primaryCat = Array.isArray(p.cat) ? p.cat[0] : p.cat;
+      const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
+      return `<div class="event" style="cursor:pointer" onclick="showPlaceDetail('${escStr(p.name)}','${primaryCat}','${escStr(p.addr||'')}','${p.rating||''}')">
+        <div style="width:46px;height:52px;background:${cat.color};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${cat.emoji}</div>
+        <div class="event-info">
+          <div class="event-name">${p.name}</div>
+          <div class="event-sub">${p.addr || 'Bordeaux'}</div>
+          <div class="event-tags">
+            <span class="etag" style="color:${cat.textColor};background:${cat.color}">${cat.label}</span>
+            ${p.rating ? `<span class="etag">${p.rating}</span>` : ''}
+          </div>
         </div>
-      </div>
-      <button onclick="event.stopPropagation();removeFav('${escStr(p.name)}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--terracotta)">❤️</button>
-    </div>`;
-  }).join('');
+        <button onclick="event.stopPropagation();removeFav('${escStr(p.name)}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--terracotta)">❤️</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Événements favoris
+  if (eventFavorites.length > 0) {
+    html += `<div style="font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:${favorites.length > 0 ? '20px' : '0'} 0 10px">📅 Évènements</div>`;
+    html += eventFavorites.map(evt => {
+      const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
+      const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
+      const dateStr = d ? `${d.getDate()} ${MOIS[d.getMonth()]}` : '';
+      const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
+      const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
+      return `<div class="event" style="cursor:pointer" onclick="openEventDetail('${evtJson}')">
+        <div class="event-date" style="flex-shrink:0">
+          <div class="event-day">${d ? d.getDate() : '?'}</div>
+          <div class="event-month">${d ? MOIS[d.getMonth()] : ''}</div>
+        </div>
+        <div class="event-info">
+          <div class="event-name">${evt.nom}</div>
+          <div class="event-sub">${addr}</div>
+          <div class="event-tags">
+            <span class="etag">${cat.emoji} ${cat.label}</span>
+            ${evt.tarif ? `<span class="etag">${evt.tarif}</span>` : ''}
+          </div>
+        </div>
+        <button onclick="event.stopPropagation();removeEventFav('${escStr(evt.nom)}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--terracotta)">❤️</button>
+      </div>`;
+    }).join('');
+  }
+
+  container.innerHTML = html;
 }
 
 function removeFav(name) {
   favorites = favorites.filter(f => f.name !== name);
   localStorage.setItem('gambette_favs', JSON.stringify(favorites));
+  renderFavs();
+}
+
+function removeEventFav(nom) {
+  eventFavorites = eventFavorites.filter(f => f.nom !== nom);
+  localStorage.setItem('gambette_event_favs', JSON.stringify(eventFavorites));
   renderFavs();
 }
 function setNav(tab) {

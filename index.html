@@ -680,12 +680,13 @@ body {
 .event-img-card {
   width:100%; height:160px; object-fit:cover;
   border-radius:12px 12px 0 0; display:block;
+  background:var(--cream2);
 }
 .event-img-placeholder {
-  width:100%; height:140px;
+  width:100%; height:130px;
   border-radius:12px 12px 0 0;
   display:flex; align-items:center; justify-content:center;
-  font-size:44px;
+  font-size:44px; flex-shrink:0;
 }
 .event-card-full {
   background:var(--white); border-radius:16px; overflow:hidden;
@@ -825,7 +826,7 @@ body {
 
   <!-- NEAR ME -->
   <div class="sec-hd" style="margin-top:20px">
-    <div class="sec-title" id="near-me-title">Près de chez toi</div>
+    <div class="sec-title" id="near-me-title">✨ Nos suggestions</div>
     <button class="sec-link" id="geo-btn" onclick="requestGeolocation()">📍 Me localiser</button>
   </div>
   <div class="hscroll" id="places-scroll">
@@ -1652,12 +1653,12 @@ function renderEventsPage() {
 
     return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
       ${hasImg
-        ? `<div style="position:relative;height:160px;overflow:hidden;border-radius:12px 12px 0 0">
-             <img id="${uid}" src="${evt.image_url}" alt="${evt.nom}"
+        ? `<div style="height:160px;overflow:hidden;border-radius:12px 12px 0 0;background:var(--cream2)">
+             <img src="${evt.image_url}" alt="${evt.nom}"
                style="width:100%;height:160px;object-fit:cover;display:block"
-               onerror="document.getElementById('${uid}').style.display='none';document.getElementById('ph_${uid}').style.display='flex'">
-             <div id="ph_${uid}" class="event-img-placeholder" style="background:${cat.textColor}22;display:none;position:absolute;inset:0;height:auto">${cat.emoji}</div>
-           </div>`
+               onerror="this.parentNode.style.display='none';document.getElementById('ph_${uid}').style.display='flex'">
+           </div>
+           <div id="ph_${uid}" class="event-img-placeholder" style="background:${cat.textColor}22;display:none">${cat.emoji}</div>`
         : `<div class="event-img-placeholder" style="background:${cat.textColor}22">${cat.emoji}</div>`
       }
       <div class="event-card-body">
@@ -1701,13 +1702,20 @@ function filterEventsAge(btn, age) {
 function openEventDetail(evtJson) {
   const evt = JSON.parse(decodeURIComponent(evtJson));
   const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
-  const hasImg = evt.image_url && !evt.image_url.endsWith('/');
+  const hasImg = evt.image_url && evt.image_url.startsWith('http');
 
   currentEventForFav = evt;
-
-  // Header coloré sans image
-  document.getElementById('evd-img-wrap').innerHTML =
-    `<div class="detail-event-placeholder" style="background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66)">${cat.emoji}</div>`;
+  if (hasImg) {
+    document.getElementById('evd-img-wrap').innerHTML =
+      `<div style="position:relative;width:calc(100% + 44px);margin:0 -22px 18px;height:200px;overflow:hidden">
+        <img src="${evt.image_url}" alt="${evt.nom}"
+          style="width:100%;height:200px;object-fit:cover;display:block"
+          onerror="this.parentNode.innerHTML='<div class=\\'detail-event-placeholder\\' style=\\'background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66);width:100%;height:200px\\'>${cat.emoji}</div>'">
+      </div>`;
+  } else {
+    document.getElementById('evd-img-wrap').innerHTML =
+      `<div class="detail-event-placeholder" style="background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66);width:calc(100% + 44px);margin:0 -22px 18px">${cat.emoji}</div>`;
+  }
 
   // Catégorie
   document.getElementById('evd-cat').innerHTML =
@@ -1841,7 +1849,7 @@ function onGeolocationSuccess() {
 
   // Mettre à jour le header
   document.getElementById('header-city').textContent = '📍 Autour de toi';
-  document.getElementById('near-me-title').textContent = 'Autour de toi';
+  document.getElementById('near-me-title').textContent = '📍 Autour de toi';
 
   // Marqueur position utilisateur sur la carte
   if (leafletMap) {
@@ -1882,7 +1890,7 @@ function sortPlacesByDistance() {
 }
 
 function formatDistance(km) {
-  if (km < 1) return Math.round(km * 1000) + ' m';
+  if (km < 1) return Math.round(km * 10) * 100 + ' m';
   return km.toFixed(1) + ' km';
 }
 

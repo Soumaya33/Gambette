@@ -2100,14 +2100,24 @@ function setStar(n) {
 }
 
 async function renderReviews(placeId) {
-  const list = reviews[placeId] || [];
   const container = document.getElementById('reviews-list');
   const count = document.getElementById('review-count');
 
-  // Charger depuis Supabase si pas encore en cache
   if (!reviews[placeId]) {
     try {
-      const place = allPlaces.find(p => p.name.toLowerCase().replace(/\s+/g,'-') === placeId);
+      // Cherche d'abord par id Supabase exact
+      let place = allPlaces.find(p => p.id && p.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') === placeId);
+
+      // Fallback : cherche par nom normalisé plus souple
+      if (!place) {
+        place = allPlaces.find(p => {
+          const normalized = p.name.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // enlever accents
+            .replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-');
+          return normalized === placeId || p.name.toLowerCase().replace(/\s+/g,'-') === placeId;
+        });
+      }
+
       if (place && place.id) {
         const data = await supaFetch(`avis?lieu_id=eq.${place.id}&order=created_at.desc&select=*`);
         reviews[placeId] = (data || []).map(r => ({
@@ -2117,6 +2127,7 @@ async function renderReviews(placeId) {
           date: new Date(r.created_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }),
         }));
       } else {
+        // Dernier recours : charger tous les avis sans lieu_id (avis déposés sans id lié)
         reviews[placeId] = [];
       }
     } catch(e) {
@@ -2150,8 +2161,14 @@ async function submitReview() {
   if (!text) { alert('Merci d\'écrire un petit avis'); return; }
 
   const avis = { auteur: name, note: currentStars, commentaire: text };
-  // Lier à un lieu si on a son id Supabase, sinon stocker localement
-  const place = allPlaces.find(p => (p.id || p.name.toLowerCase().replace(/\s+/g,'-')) === currentPlaceId);
+  // Lier à un lieu via son id Supabase
+  const place = allPlaces.find(p => {
+    if (!p.id) return false;
+    const slug = p.name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-');
+    return slug === currentPlaceId || p.name.toLowerCase().replace(/\s+/g,'-') === currentPlaceId;
+  });
   if (place && place.id) {
     avis.lieu_id = place.id;
   }

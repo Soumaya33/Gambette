@@ -724,7 +724,7 @@ body {
 }
 .detail-event-placeholder {
   width:calc(100% + 44px); margin:0 -22px 18px;
-  height:200px; display:flex; align-items:center;
+  height:260px; display:flex; align-items:center;
   justify-content:center; font-size:64px;
 }
 .detail-info-block { margin-bottom:16px; }
@@ -839,68 +839,11 @@ body {
   <!-- COUPS DE COEUR -->
   <div class="sec-hd" style="margin-top:28px">
     <div class="sec-title">💛 Nos coups de cœur</div>
-    <button class="sec-link">Voir tout →</button>
   </div>
-  <div class="crush-grid">
-    <div class="crush-card" onclick="openDetail('crush1')">
-      <div class="crush-img" style="background:linear-gradient(135deg,#3D6B57,#1E3A2F)">
-        <span>🌳</span>
-        <div class="crush-badge">Outdoor</div>
-      </div>
-      <div class="crush-body">
-        <div class="crush-label">Le choix de la rédac'</div>
-        <div class="crush-name">Parc Bordelais</div>
-        <div class="crush-desc">Lac, aire de jeux XXL, poneys… Le parc préféré des familles bordelaises.</div>
-        <div class="crush-footer">
-          <span class="crush-tag">🆓 Gratuit</span>
-          <span class="crush-tag">Tout âge</span>
-        </div>
-      </div>
-    </div>
-    <div class="crush-card" onclick="openDetail('crush2')">
-      <div class="crush-img" style="background:linear-gradient(135deg,#7B4FA6,#4a2d6b)">
-        <span>🔬</span>
-        <div class="crush-badge">Culture</div>
-      </div>
-      <div class="crush-body">
-        <div class="crush-label">Incontournable</div>
-        <div class="crush-name">Cap Sciences</div>
-        <div class="crush-desc">Musée des sciences interactif sur les quais. Les enfants adorent.</div>
-        <div class="crush-footer">
-          <span class="crush-tag">⭐ 4.5</span>
-          <span class="crush-tag">Dès 4 ans</span>
-        </div>
-      </div>
-    </div>
-    <div class="crush-card" onclick="openDetail('crush3')">
-      <div class="crush-img" style="background:linear-gradient(135deg,#854F0B,#5a3508)">
-        <span>🍷</span>
-        <div class="crush-badge">Apéro parents</div>
-      </div>
-      <div class="crush-body">
-        <div class="crush-label">Apéro réussi</div>
-        <div class="crush-name">Darwin Ecosystème</div>
-        <div class="crush-desc">Terrasse géante, skatepark pour les kids, food trucks. La totale.</div>
-        <div class="crush-footer">
-          <span class="crush-tag">⭐ 4.5</span>
-          <span class="crush-tag">Kids welcome</span>
-        </div>
-      </div>
-    </div>
-    <div class="crush-card" onclick="openDetail('crush4')">
-      <div class="crush-img" style="background:linear-gradient(135deg,#993C1D,#6b2510)">
-        <span>🍕</span>
-        <div class="crush-badge">Resto kids</div>
-      </div>
-      <div class="crush-body">
-        <div class="crush-label">Testé & approuvé</div>
-        <div class="crush-name">Le Milk</div>
-        <div class="crush-desc">Burgers, chaises hautes, espace kids. Parents et enfants heureux.</div>
-        <div class="crush-footer">
-          <span class="crush-tag">⭐ 4.4</span>
-          <span class="crush-tag">Menu enfant</span>
-        </div>
-      </div>
+  <div class="crush-grid" id="crush-grid">
+    <!-- Chargé depuis Supabase -->
+    <div class="loading-card" style="grid-column:1/-1;height:120px;justify-content:center">
+      <div class="loading-spinner"></div>
     </div>
   </div>
 
@@ -1417,6 +1360,7 @@ function startApp() {
     loadPlacesFromSupabase();
     loadGoogleForSearch();
     loadEventsFromSupabase();
+    loadCrushPlaces();
   }, 1800);
 }
 
@@ -1454,7 +1398,11 @@ function addLeafletMarkers(places) {
   filtered.forEach(function(p) {
     if (!p.lat || !p.lng) return;
     const primaryCat = Array.isArray(p.cat) ? p.cat[0] : p.cat;
-    const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
+    // Si un filtre catégorie est actif et que le lieu a cette catégorie, l'utiliser pour le marqueur
+    const displayCat = (currentCat !== 'all' && Array.isArray(p.cat) && p.cat.includes(currentCat))
+      ? currentCat
+      : primaryCat;
+    const cat = CATEGORIES[displayCat] || CATEGORIES.jeux_ext;
     const icon = L.divIcon({
       className: '',
       html: '<div style="background:' + cat.textColor + ';width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.25);border:2px solid white;"><span style="transform:rotate(45deg);font-size:16px">' + cat.emoji + '</span></div>',
@@ -1707,14 +1655,14 @@ function openEventDetail(evtJson) {
   currentEventForFav = evt;
   if (hasImg) {
     document.getElementById('evd-img-wrap').innerHTML =
-      `<div style="position:relative;width:calc(100% + 44px);margin:0 -22px 18px;height:200px;overflow:hidden">
+      `<div style="position:relative;width:calc(100% + 44px);margin:0 -22px 18px;height:260px;overflow:hidden">
         <img src="${evt.image_url}" alt="${evt.nom}"
-          style="width:100%;height:200px;object-fit:cover;display:block"
-          onerror="this.parentNode.innerHTML='<div class=\\'detail-event-placeholder\\' style=\\'background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66);width:100%;height:200px\\'>${cat.emoji}</div>'">
+          style="width:100%;height:260px;object-fit:cover;object-position:top;display:block"
+          onerror="this.parentNode.innerHTML='<div class=\\'detail-event-placeholder\\' style=\\'background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66);width:100%;height:260px\\'>${cat.emoji}</div>'">
       </div>`;
   } else {
     document.getElementById('evd-img-wrap').innerHTML =
-      `<div class="detail-event-placeholder" style="background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66);width:calc(100% + 44px);margin:0 -22px 18px">${cat.emoji}</div>`;
+      `<div class="detail-event-placeholder" style="background:linear-gradient(135deg,${cat.textColor}33,${cat.textColor}66);width:calc(100% + 44px);margin:0 -22px 18px;height:260px">${cat.emoji}</div>`;
   }
 
   // Catégorie
@@ -1898,6 +1846,39 @@ function showGeoToast(msg) {
   // Réutilise le système de toast existant si présent
   console.warn(msg);
 }
+// ── COUPS DE CŒUR ──
+async function loadCrushPlaces() {
+  try {
+    const data = await supaFetch('lieux?coup_de_coeur=eq.true&valide=eq.true&select=*&limit=4');
+    if (data && data.length > 0) renderCrushGrid(data);
+  } catch(e) { console.warn('Coups de cœur indisponibles', e); }
+}
+
+function renderCrushGrid(places) {
+  const container = document.getElementById('crush-grid');
+  if (!container) return;
+  container.innerHTML = places.map(p => {
+    const primaryCat = Array.isArray(p.categorie) ? p.categorie[0] : p.categorie;
+    const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
+    const label = p.label_redac || cat.label;
+    const desc = p.description || '';
+    const tarif = p.tarif ? `<span class="crush-tag">${p.tarif}</span>` : '';
+    const ages = Array.isArray(p.ages) && p.ages.length ? `<span class="crush-tag">${p.ages[0]}</span>` : '';
+    return `<div class="crush-card" onclick="showPlaceDetail('${escStr(p.nom)}','${primaryCat}','${escStr(p.adresse||'')}','')">
+      <div class="crush-img" style="background:linear-gradient(135deg,${cat.textColor}99,${cat.textColor}cc)">
+        <span>${cat.emoji}</span>
+        <div class="crush-badge">${cat.label}</div>
+      </div>
+      <div class="crush-body">
+        <div class="crush-label">${escStr(label)}</div>
+        <div class="crush-name">${escStr(p.nom)}</div>
+        <div class="crush-desc">${escStr(desc.slice(0,80))}${desc.length>80?'…':''}</div>
+        <div class="crush-footer">${tarif}${ages}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function toggleMoreFilters() {
   const panel = document.getElementById('advanced-filters');
   const btn = document.getElementById('btn-more-filters');

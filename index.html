@@ -1855,7 +1855,7 @@ function showGeoToast(msg) {
 // ── COUPS DE CŒUR ──
 async function loadCrushPlaces() {
   try {
-    const data = await supaFetch('lieux?coup_de_coeur=eq.true&valide=eq.true&select=*&limit=4');
+    const data = await supaFetch('lieux?coup_de_coeur=eq.true&valide=eq.true&select=*&order=crush_order.asc.nullslast&limit=8');
     if (data && data.length > 0) renderCrushGrid(data);
   } catch(e) { console.warn('Coups de cœur indisponibles', e); }
 }

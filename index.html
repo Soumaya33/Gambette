@@ -2319,8 +2319,23 @@ function toggleAddTagSingle(el) {
 
 async function submitNewPlace() {
   if (!addSelectedPlace) { alert('Merci de sélectionner un lieu'); return; }
-  const cats = [...document.querySelectorAll('#add-modal .form-cat.sel')].map(c => c.textContent.trim());
-  if (!cats.length) { alert('Merci de sélectionner au moins un tag'); return; }
+  const catBtns = [...document.querySelectorAll('#add-modal .form-cat.sel')];
+  if (!catBtns.length) { alert('Merci de sélectionner au moins un tag'); return; }
+
+  // Convertir les labels affichés en clés Supabase
+  const CAT_MAP = {
+    'jeux extérieur': 'jeux_ext',
+    'jeux intérieur': 'jeux_int',
+    'culture & biblio': 'culture',
+    'apéro parents': 'apero',
+    'resto kids': 'resto',
+    "au bord de l'eau": 'eau',
+    'spectacle': 'culture',
+  };
+  const categorie = catBtns.map(c => {
+    const label = c.textContent.replace(/[^\w\s'&éèêëàâùûüîïôç]/gu, '').trim().toLowerCase();
+    return CAT_MAP[label] || 'jeux_ext';
+  }).filter((v, i, a) => a.indexOf(v) === i); // dédoublonner
 
   const lieu = {
     nom: addSelectedPlace.name,
@@ -2328,7 +2343,7 @@ async function submitNewPlace() {
     latitude: addSelectedPlace.lat || 44.8378,
     longitude: addSelectedPlace.lng || -0.5792,
     google_place_id: addSelectedPlace.placeId || null,
-    categorie: ['jeux_ext'],
+    categorie: categorie,
     description: document.getElementById('add-comment').value.trim() || null,
     valide: false,
   };

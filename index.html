@@ -1367,6 +1367,7 @@ function startApp() {
     loadGoogleForSearch();
     loadEventsFromSupabase();
     loadCrushPlaces();
+    logAction('app_open');
   }, 1800);
 }
 
@@ -1655,6 +1656,7 @@ function filterEventsAge(btn, age) {
 // Fiche événement enrichie
 function openEventDetail(evtJson) {
   const evt = JSON.parse(decodeURIComponent(evtJson));
+  logAction('view_event', evt.nom, evt.id || null, evt.categorie);
   const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
   const hasImg = evt.image_url && evt.image_url.startsWith('http');
 
@@ -1765,7 +1767,41 @@ function renderPlaceCards(places) {
 function escStr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : (s||''); }
 
-// ── GÉOLOCALISATION ──
+// ── ANALYTICS ──
+// Génère ou récupère un UUID anonyme persistant par appareil
+function getAnonymousUserId() {
+  let uid = localStorage.getItem('gambette_uid');
+  if (!uid) {
+    uid = 'uid_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('gambette_uid', uid);
+  }
+  return uid;
+}
+
+const ANALYTICS_USER_ID = getAnonymousUserId();
+
+async function logAction(action, itemName, itemId, itemCat) {
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/events_log', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        user_id:   ANALYTICS_USER_ID,
+        action:    action,
+        item_name: itemName  || null,
+        item_id:   itemId    || null,
+        item_cat:  itemCat   || null,
+      }),
+    });
+  } catch(e) {
+    // Silencieux — le tracking ne doit jamais bloquer l'app
+  }
+}
 let userLat = null, userLng = null, userMarker = null;
 
 function requestGeolocation() {
@@ -1782,6 +1818,7 @@ function requestGeolocation() {
     pos => {
       userLat = pos.coords.latitude;
       userLng = pos.coords.longitude;
+      logAction('geolocate');
       onGeolocationSuccess();
     },
     err => {
@@ -1996,10 +2033,12 @@ function filterCat(btn, cat) {
   currentCat = cat;
   renderPlaceCards(allPlaces);
   addLeafletMarkers(allPlaces);
+  if (cat !== 'all') logAction('filter_cat', cat);
 }
 
 // ── DETAIL ──
 function showPlaceDetail(name, cat, addr, rating) {
+  logAction('view_place', name, null, Array.isArray(cat) ? cat[0] : cat);
   currentPlaceId = name.toLowerCase().replace(/\s+/g,'-');
   currentStars = 0;
   document.querySelectorAll('.star').forEach(s => { s.classList.remove('active'); s.textContent = '☆'; });
@@ -2240,6 +2279,7 @@ async function submitNewEvent() {
 
   try {
     await supaFetch('evenements', { method: 'POST', body: JSON.stringify(evt) });
+    logAction('propose_event', name);
   } catch(e) {
     console.warn('Erreur Supabase événement', e);
   }
@@ -2386,6 +2426,7 @@ async function submitNewPlace() {
     }
 
     // Succès
+    logAction('propose_place', addSelectedPlace.name);
     btn.textContent = '⏳ En attente de validation…';
     btn.style.background = '#2D5241';
     setTimeout(() => {
@@ -2440,10 +2481,12 @@ function toggleFavorite() {
   if (idx >= 0) {
     favorites.splice(idx, 1);
     btn.textContent = '🤍'; btn.classList.remove('active');
+    logAction('remove_favorite_place', name);
   } else {
     const place = allPlaces.find(p => p.name === name);
     if (place) favorites.push({ name: place.name, cat: place.cat, addr: place.addr, rating: place.rating });
     btn.textContent = '❤️'; btn.classList.add('active');
+    logAction('add_favorite_place', name, null, Array.isArray(place?.cat) ? place.cat[0] : place?.cat);
   }
   localStorage.setItem('gambette_favs', JSON.stringify(favorites));
   renderFavs();
@@ -2457,9 +2500,11 @@ function toggleEventFavorite() {
   if (idx >= 0) {
     eventFavorites.splice(idx, 1);
     btn.textContent = '🤍'; btn.classList.remove('active');
+    logAction('remove_favorite_event', nom, null, currentEventForFav.categorie);
   } else {
     eventFavorites.push(currentEventForFav);
     btn.textContent = '❤️'; btn.classList.add('active');
+    logAction('add_favorite_event', nom, null, currentEventForFav.categorie);
   }
   localStorage.setItem('gambette_event_favs', JSON.stringify(eventFavorites));
   renderFavs();
@@ -2586,6 +2631,7 @@ function setNav(tab) {
       el.style.display = el.id === 'events-page' ? 'block' : 'none';
     });
     renderEventsPage();
+    logAction('view_events_page');
   } else {
     Array.from(body.children).forEach(el => {
       if (el.id === 'favs-section' || el.id === 'events-page') {

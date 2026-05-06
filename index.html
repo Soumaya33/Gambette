@@ -2328,26 +2328,58 @@ async function submitNewPlace() {
     latitude: addSelectedPlace.lat || 44.8378,
     longitude: addSelectedPlace.lng || -0.5792,
     google_place_id: addSelectedPlace.placeId || null,
-    categorie: 'jeux_ext',
+    categorie: ['jeux_ext'],
     description: document.getElementById('add-comment').value.trim() || null,
     valide: false,
   };
 
-  try {
-    await supaFetch('lieux', { method: 'POST', body: JSON.stringify(lieu) });
-  } catch(e) {
-    console.warn('Erreur Supabase lieu', e);
-  }
-
   const btn = document.querySelector('#add-modal .btn-submit');
-  btn.textContent = '⏳ En attente de validation…';
-  btn.style.background = '#2D5241';
-  setTimeout(() => {
-    closeModalById('add-modal');
-    btn.textContent = 'Proposer ce lieu ✨';
-    btn.style.background = '';
-    resetPlaceSearch();
-  }, 2000);
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/lieux', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(lieu),
+    });
+
+    if (res.status === 409) {
+      // Doublon — lieu déjà en base
+      btn.textContent = '⚠️ Ce lieu existe déjà !';
+      btn.style.background = '#854F0B';
+      setTimeout(() => { btn.textContent = 'Proposer ce lieu ✨'; btn.style.background = ''; }, 2500);
+      return;
+    }
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Supabase erreur:', err);
+      btn.textContent = '❌ Erreur, réessaie';
+      btn.style.background = '#993C1D';
+      setTimeout(() => { btn.textContent = 'Proposer ce lieu ✨'; btn.style.background = ''; }, 2500);
+      return;
+    }
+
+    // Succès
+    btn.textContent = '⏳ En attente de validation…';
+    btn.style.background = '#2D5241';
+    setTimeout(() => {
+      closeModalById('add-modal');
+      btn.textContent = 'Proposer ce lieu ✨';
+      btn.style.background = '';
+      resetPlaceSearch();
+    }, 2000);
+
+  } catch(e) {
+    console.error('Erreur réseau:', e);
+    btn.textContent = '❌ Erreur réseau';
+    btn.style.background = '#993C1D';
+    setTimeout(() => { btn.textContent = 'Proposer ce lieu ✨'; btn.style.background = ''; }, 2500);
+  }
 }
 
 function closeModalById(id) {

@@ -2136,6 +2136,26 @@ async function renderReviews(placeId) {
   }
 
   const finalList = reviews[placeId] || [];
+
+  // Calcul note moyenne
+  let ratingHtml = '';
+  if (finalList.length > 0) {
+    const avg = finalList.reduce((sum, r) => sum + r.stars, 0) / finalList.length;
+    const stars = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+    ratingHtml = `<div class="detail-meta-item" style="background:#FDF3E7;color:#854F0B">
+      ${stars} <strong>${avg.toFixed(1)}</strong> · ${finalList.length} avis
+    </div>`;
+    // Mettre à jour le meta du lieu avec la note
+    const metaEl = document.getElementById('detail-meta');
+    if (metaEl && !metaEl.querySelector('.rating-badge')) {
+      const badge = document.createElement('div');
+      badge.className = 'detail-meta-item rating-badge';
+      badge.style.cssText = 'background:#FDF3E7;color:#854F0B';
+      badge.innerHTML = `${stars} <strong>${avg.toFixed(1)}</strong> · ${finalList.length} avis`;
+      metaEl.appendChild(badge);
+    }
+  }
+
   count.textContent = finalList.length ? `${finalList.length} avis` : '';
 
   if (finalList.length === 0) {
@@ -2175,10 +2195,12 @@ async function submitReview() {
 
   try {
     await supaFetch('avis', { method: 'POST', body: JSON.stringify(avis) });
+    logAction('submit_review', document.getElementById('detail-name').textContent, null, null);
   } catch(e) {
-    console.warn('Erreur Supabase avis, stockage local', e);
+    console.warn('Erreur Supabase avis', e);
   }
 
+  // Ajouter immédiatement en local sans attendre Supabase
   if (!reviews[currentPlaceId]) reviews[currentPlaceId] = [];
   reviews[currentPlaceId].unshift({
     author: name, stars: currentStars, text: text,
@@ -2189,8 +2211,8 @@ async function submitReview() {
   document.getElementById('review-text').value = '';
   setStar(0);
 
-  // Vider le cache pour recharger depuis Supabase
-  delete reviews[currentPlaceId];
+  // Supprimer le badge rating existant pour le recalculer
+  document.querySelector('.rating-badge')?.remove();
   renderReviews(currentPlaceId);
 
   const btn = document.querySelector('#detail-modal .btn-submit');

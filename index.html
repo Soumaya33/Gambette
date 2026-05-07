@@ -682,7 +682,38 @@ body {
   border-radius:10px; background:var(--cream2); color:var(--charcoal);
 }
 
-/* ── EVENTS PAGE ── */
+/* ── MAPS BOTTOM SHEET ── */
+.maps-sheet-overlay {
+  position:fixed; inset:0;
+  background:rgba(26,26,24,.5);
+  backdrop-filter:blur(4px);
+  z-index:600; display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s;
+}
+.maps-sheet-overlay.open { opacity:1; pointer-events:all; }
+.maps-sheet {
+  width:100%; max-width:430px; margin:0 auto;
+  background:var(--white); border-radius:20px 20px 0 0;
+  padding:20px 22px 36px;
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.34,1.2,.64,1);
+}
+.maps-sheet-overlay.open .maps-sheet { transform:translateY(0); }
+.maps-sheet-handle { width:36px; height:4px; background:var(--sand); border-radius:2px; margin:0 auto 18px; }
+.maps-sheet-icon { font-size:32px; margin-bottom:10px; }
+.maps-sheet-title { font-family:'Fraunces',serif; font-size:17px; font-weight:600; margin-bottom:4px; }
+.maps-sheet-addr { font-size:13px; font-weight:300; color:var(--muted); margin-bottom:20px; line-height:1.4; }
+.maps-sheet-btn {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:14px; border:none; border-radius:13px;
+  font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500;
+  cursor:pointer; transition:all .15s; margin-bottom:10px;
+}
+.maps-sheet-btn-primary { background:var(--forest); color:var(--cream); }
+.maps-sheet-btn-primary:active { background:var(--forest2); }
+.maps-sheet-btn-cancel { background:var(--cream2); color:var(--muted); }
+.maps-sheet-btn-cancel:active { background:var(--sand); }
 .event-img-card {
   width:100%; height:160px; object-fit:cover;
   border-radius:12px 12px 0 0; display:block;
@@ -1307,6 +1338,22 @@ body {
   </div>
 </div>
 
+<!-- MAPS BOTTOM SHEET -->
+<div class="maps-sheet-overlay" id="maps-sheet" onclick="closeMapsSheet(event)">
+  <div class="maps-sheet">
+    <div class="maps-sheet-handle"></div>
+    <div class="maps-sheet-icon">🗺️</div>
+    <div class="maps-sheet-title" id="maps-sheet-title">Voir l'itinéraire</div>
+    <div class="maps-sheet-addr" id="maps-sheet-addr"></div>
+    <button class="maps-sheet-btn maps-sheet-btn-primary" onclick="confirmOpenMaps()">
+      Ouvrir dans Google Maps →
+    </button>
+    <button class="maps-sheet-btn maps-sheet-btn-cancel" onclick="closeMapsSheet()">
+      Annuler
+    </button>
+  </div>
+</div>
+
 <script>
 const API_KEY = 'AIzaSyCl3MADoNXEoJKKNaGZT07l_2EPmSvvBU4';
 
@@ -1692,8 +1739,8 @@ function openEventDetail(evtJson) {
       <div class="detail-info-icon">${r.icon}</div>
       <div style="flex:1">
         <div class="detail-info-label">${r.label}</div>
-        <div class="detail-info-val" ${r.maps ? `onclick="openInMaps('${escStr(r.val)}',${r.lat||null},${r.lng||null})" style="cursor:pointer;color:var(--terracotta)"` : ''}>
-          ${r.val}${r.maps ? ' <span style="font-size:10px">→ Maps</span>' : ''}
+        <div class="detail-info-val" ${r.maps ? `onclick="openInMaps('${escStr(r.val)}',${r.lat||null},${r.lng||null})" style="cursor:pointer"` : ''}>
+          ${r.maps ? `<strong style="color:var(--charcoal)">${r.val}</strong> <span style="font-size:11px;color:var(--terracotta);font-weight:500;margin-left:4px">Itinéraire →</span>` : r.val}
         </div>
       </div>
     </div>`).join('') + `</div>`;
@@ -1921,15 +1968,34 @@ function renderCrushGrid(places) {
   }).join('');
 }
 
-// ── GOOGLE MAPS ──
+// ── GOOGLE MAPS BOTTOM SHEET ──
+let _mapsLat = null, _mapsLng = null, _mapsAddr = null;
+
 function openInMaps(addr, lat, lng) {
+  _mapsAddr = addr;
+  _mapsLat = lat && lat !== 'null' ? parseFloat(lat) : null;
+  _mapsLng = lng && lng !== 'null' ? parseFloat(lng) : null;
+  document.getElementById('maps-sheet-title').textContent = 'Voir l\'itinéraire';
+  document.getElementById('maps-sheet-addr').textContent = addr;
+  document.getElementById('maps-sheet').classList.add('open');
+  document.body.classList.add('modal-open');
+}
+
+function confirmOpenMaps() {
   let url;
-  if (lat && lng && lat !== 'null' && lng !== 'null') {
-    url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  if (_mapsLat && _mapsLng) {
+    url = `https://www.google.com/maps/dir/?api=1&destination=${_mapsLat},${_mapsLng}`;
   } else {
-    url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr + ', Bordeaux')}`;
+    url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(_mapsAddr + ', Bordeaux')}`;
   }
   window.open(url, '_blank');
+  closeMapsSheet();
+}
+
+function closeMapsSheet(e) {
+  if (e && e.target !== document.getElementById('maps-sheet')) return;
+  document.getElementById('maps-sheet').classList.remove('open');
+  document.body.classList.remove('modal-open');
 }
 
 function toggleMoreFilters() {
@@ -2076,7 +2142,10 @@ function showPlaceDetail(name, cat, addr, rating) {
 
   document.getElementById('detail-name').textContent = name;
   document.getElementById('detail-meta').innerHTML = [
-    addr ? `<div class="detail-meta-item" onclick="openInMaps('${escStr(addr)}',${lat},${lng})" style="cursor:pointer;color:var(--terracotta)">📍 ${addr} <span style="font-size:10px">→ Maps</span></div>` : '',
+    addr ? `<div class="detail-meta-item" onclick="openInMaps('${escStr(addr)}',${lat},${lng})" style="cursor:pointer;border:1.5px solid var(--sand);background:var(--cream)">
+      📍 <strong style="color:var(--charcoal)">${addr}</strong>
+      <span style="margin-left:6px;font-size:11px;color:var(--terracotta);font-weight:500">Itinéraire →</span>
+    </div>` : '',
     rating ? `<div class="detail-meta-item">${rating}</div>` : '',
   ].join('');
   const override = placeOverrides[currentPlaceId] || {};

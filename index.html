@@ -1681,7 +1681,7 @@ function openEventDetail(evtJson) {
 
   const rows = [
     dateStr ? { icon:'📅', label:'Date', val: dateStr + (evt.heure ? ' · ' + evt.heure : '') } : null,
-    evt.adresse ? { icon:'📍', label:'Lieu', val: evt.adresse } : null,
+    evt.adresse ? { icon:'📍', label:'Lieu', val: evt.adresse, maps: true, lat: evt.latitude, lng: evt.longitude } : null,
     (evt.age_min !== null && evt.age_min !== undefined) ? { icon:'👶', label:'Âge', val: `${evt.age_min}${evt.age_max && evt.age_max < 99 ? ' – ' + evt.age_max : '+'} ans` } : null,
     evt.tarif ? { icon:'💰', label:'Tarif', val: evt.tarif } : null,
     evt.conditions_acces ? { icon:'ℹ️', label:'Conditions', val: evt.conditions_acces } : null,
@@ -1690,7 +1690,12 @@ function openEventDetail(evtJson) {
   document.getElementById('evd-infos').innerHTML = `<div class="detail-info-block">` +
     rows.map(r => `<div class="detail-info-row">
       <div class="detail-info-icon">${r.icon}</div>
-      <div><div class="detail-info-label">${r.label}</div><div class="detail-info-val">${r.val}</div></div>
+      <div style="flex:1">
+        <div class="detail-info-label">${r.label}</div>
+        <div class="detail-info-val" ${r.maps ? `onclick="openInMaps('${escStr(r.val)}',${r.lat||null},${r.lng||null})" style="cursor:pointer;color:var(--terracotta)"` : ''}>
+          ${r.val}${r.maps ? ' <span style="font-size:10px">→ Maps</span>' : ''}
+        </div>
+      </div>
     </div>`).join('') + `</div>`;
 
   // Description
@@ -1916,6 +1921,17 @@ function renderCrushGrid(places) {
   }).join('');
 }
 
+// ── GOOGLE MAPS ──
+function openInMaps(addr, lat, lng) {
+  let url;
+  if (lat && lng && lat !== 'null' && lng !== 'null') {
+    url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  } else {
+    url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr + ', Bordeaux')}`;
+  }
+  window.open(url, '_blank');
+}
+
 function toggleMoreFilters() {
   const panel = document.getElementById('advanced-filters');
   const btn = document.getElementById('btn-more-filters');
@@ -2039,7 +2055,11 @@ function showPlaceDetail(name, cat, addr, rating) {
   document.getElementById('review-name').value = '';
   document.getElementById('review-text').value = '';
 
-  // Gère cat simple ou tableau
+  // Récupérer les coords du lieu
+  const place = allPlaces.find(p => p.name === name);
+  const lat = place?.lat || null;
+  const lng = place?.lng || null;
+
   const cats = Array.isArray(cat) ? cat : [cat];
   const primaryCat = cats[0];
   const catData = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
@@ -2048,7 +2068,6 @@ function showPlaceDetail(name, cat, addr, rating) {
     `linear-gradient(135deg,${catData.textColor}44,${catData.textColor}88)`;
   document.getElementById('detail-img').textContent = catData.emoji;
 
-  // Affiche toutes les catégories si multi
   const catLabels = cats.map(c => {
     const cd = CATEGORIES[c];
     return cd ? `<span style="display:inline-block;background:${cd.color};color:${cd.textColor};font-size:10px;font-weight:500;padding:3px 8px;border-radius:10px;margin-right:4px">${cd.emoji} ${cd.label}</span>` : '';
@@ -2057,7 +2076,7 @@ function showPlaceDetail(name, cat, addr, rating) {
 
   document.getElementById('detail-name').textContent = name;
   document.getElementById('detail-meta').innerHTML = [
-    addr ? `<div class="detail-meta-item">📍 ${addr}</div>` : '',
+    addr ? `<div class="detail-meta-item" onclick="openInMaps('${escStr(addr)}',${lat},${lng})" style="cursor:pointer;color:var(--terracotta)">📍 ${addr} <span style="font-size:10px">→ Maps</span></div>` : '',
     rating ? `<div class="detail-meta-item">${rating}</div>` : '',
   ].join('');
   const override = placeOverrides[currentPlaceId] || {};

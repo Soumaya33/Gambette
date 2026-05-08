@@ -374,7 +374,20 @@ body {
 .error-desc{font-size:12px;font-weight:300;color:var(--muted);line-height:1.5}
 
 /* ── MAP ── */
-#map-container {
+/* ── PAGE CARTE PLEIN ÉCRAN ── */
+#map-fullscreen-page {
+  display:none;
+  position:fixed;
+  inset:0;
+  bottom:60px; /* hauteur nav */
+  z-index:50;
+  flex-direction:column;
+}
+#map-fullscreen {
+  flex:1;
+  width:100%;
+  height:100%;
+}
   border-radius:20px; overflow:hidden;
   height:220px; margin-bottom:24px;
   box-shadow:0 4px 20px rgba(28,28,26,.1);
@@ -958,7 +971,8 @@ body {
       <button class="ef-btn" onclick="filterEventsCat(this,'sciences')">🔬 Sciences</button>
       <button class="ef-btn" onclick="filterEventsCat(this,'ateliers')">🎨 Ateliers</button>
       <button class="ef-btn" onclick="filterEventsCat(this,'nature')">🌿 Nature</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'parents')">🍷 Parents</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'jeux')">🎲 Jeux</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'parents')">🧑‍🍼 Parentalité</button>
     </div>
 
     <!-- Filtres âge -->
@@ -977,6 +991,11 @@ body {
 
 <!-- FAB -->
 <button id="fab" onclick="openChoiceModal()">＋</button>
+
+<!-- PAGE CARTE PLEIN ÉCRAN -->
+<div id="map-fullscreen-page">
+  <div id="map-fullscreen"></div>
+</div>
 
 <!-- NAV -->
 <div id="nav">
@@ -1406,7 +1425,8 @@ const CATEGORIES = {
   sciences: { label:'Sciences & apprentissage', emoji:'🔬', color:'#E8F0FB', textColor:'#1A4FA0' },
   ateliers: { label:'Ateliers & créatif',    emoji:'🎨', color:'#FEF0E8', textColor:'#A04F1A' },
   nature:   { label:'Nature & balades',      emoji:'🌿', color:'#EAFAF0', textColor:'#1A7A40' },
-  parents:  { label:'Pour les parents',       emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
+  jeux:     { label:'Jeux',                  emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
+  parents:  { label:'Parentalité',           emoji:'🧑‍🍼', color:'#F0EBF8', textColor:'#7B4FA6' },
 };
 
 let leafletMap = null, leafletMarkers = [], allPlaces = [];
@@ -2771,29 +2791,83 @@ function setNav(tab) {
 
   const body = document.querySelector('.body');
   const filtersEl = document.getElementById('filters');
+  const mapPage = document.getElementById('map-fullscreen-page');
 
-  // Masquer/afficher les filtres catégories selon l'onglet
+  // Masquer la carte plein écran par défaut
+  mapPage.style.display = 'none';
+
+  // Masquer/afficher les filtres catégories
   if (filtersEl) filtersEl.style.display = (tab === 'events' || tab === 'favs') ? 'none' : '';
 
-  if (tab === 'favs') {
+  if (tab === 'map') {
+    // Afficher la carte plein écran
+    mapPage.style.display = 'flex';
+    // Initialiser ou rafraîchir la carte plein écran
+    initFullscreenMap();
+  } else if (tab === 'favs') {
     Array.from(body.children).forEach(el => {
+      if (el.id === 'map-fullscreen-page') return;
       el.style.display = el.id === 'favs-section' ? 'block' : 'none';
     });
     renderFavs();
   } else if (tab === 'events') {
     Array.from(body.children).forEach(el => {
+      if (el.id === 'map-fullscreen-page') return;
       el.style.display = el.id === 'events-page' ? 'block' : 'none';
     });
     renderEventsPage();
     logAction('view_events_page');
   } else {
+    // Home
     Array.from(body.children).forEach(el => {
+      if (el.id === 'map-fullscreen-page') return;
       if (el.id === 'favs-section' || el.id === 'events-page') {
         el.style.display = 'none';
       } else {
         el.style.display = '';
       }
     });
+  }
+}
+
+let fullscreenMap = null;
+
+function initFullscreenMap() {
+  const container = document.getElementById('map-fullscreen');
+  if (!fullscreenMap) {
+    fullscreenMap = L.map('map-fullscreen', { zoomControl: true }).setView([44.8378, -0.5792], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution:'© OpenStreetMap © CartoDB', maxZoom:19
+    }).addTo(fullscreenMap);
+
+    // Ajouter les marqueurs depuis allPlaces
+    allPlaces.forEach(p => {
+      if (!p.lat || !p.lng) return;
+      const cat = CATEGORIES[Array.isArray(p.cat) ? p.cat[0] : p.cat] || CATEGORIES.jeux_ext;
+      const icon = L.divIcon({
+        className:'',
+        html:`<div style="background:${cat.textColor};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);border:2px solid white">${cat.emoji}</div>`,
+        iconSize:[32,32], iconAnchor:[16,16]
+      });
+      L.marker([p.lat, p.lng], { icon })
+        .addTo(fullscreenMap)
+        .bindPopup(`<strong>${p.name}</strong><br>${p.addr||''}`);
+    });
+
+    // Marqueur position utilisateur
+    if (userLat && userLng) {
+      const userIcon = L.divIcon({
+        className:'',
+        html:`<div style="background:#4A90E2;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(74,144,226,.6)"></div>`,
+        iconSize:[14,14], iconAnchor:[7,7]
+      });
+      L.marker([userLat, userLng], { icon: userIcon }).addTo(fullscreenMap)
+        .bindTooltip('Vous êtes ici');
+      fullscreenMap.setView([userLat, userLng], 14);
+    }
+  } else {
+    fullscreenMap.invalidateSize();
+    if (userLat && userLng) fullscreenMap.setView([userLat, userLng], 14);
   }
 }
 

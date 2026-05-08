@@ -862,7 +862,7 @@ body {
   <!-- MAP -->
   <div class="sec-hd" style="margin-top:0">
     <div class="sec-title">Carte</div>
-    <button class="sec-link" onclick="openMap()">Plein écran →</button>
+    <button class="sec-link" onclick="setNav('map');document.getElementById('nav-map').click()">Plein écran →</button>
   </div>
   <div id="map-container">
     <div id="map"></div>
@@ -972,7 +972,7 @@ body {
       <button class="ef-btn" onclick="filterEventsCat(this,'ateliers')">🎨 Ateliers</button>
       <button class="ef-btn" onclick="filterEventsCat(this,'nature')">🌿 Nature</button>
       <button class="ef-btn" onclick="filterEventsCat(this,'jeux')">🎲 Jeux</button>
-      <button class="ef-btn" onclick="filterEventsCat(this,'parents')">🧑‍🍼 Parentalité</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'parents')">🧑‍🍼 Parents</button>
     </div>
 
     <!-- Filtres âge -->
@@ -994,7 +994,15 @@ body {
 
 <!-- PAGE CARTE PLEIN ÉCRAN -->
 <div id="map-fullscreen-page">
-  <div id="map-fullscreen"></div>
+  <div id="map-fs-filters" style="position:absolute;top:0;left:0;right:0;z-index:1000;padding:10px 12px;background:linear-gradient(to bottom,rgba(255,255,255,.95) 80%,transparent);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">
+    <button class="filter-btn active" data-cat="all" onclick="filterFsMap(this,'all')">Tout</button>
+    <button class="filter-btn" data-cat="jeux_ext" onclick="filterFsMap(this,'jeux_ext')">🌳 Jeux ext.</button>
+    <button class="filter-btn" data-cat="jeux_int" onclick="filterFsMap(this,'jeux_int')">🎲 Jeux int.</button>
+    <button class="filter-btn" data-cat="culture" onclick="filterFsMap(this,'culture')">🎭 Culture</button>
+    <button class="filter-btn" data-cat="apero" onclick="filterFsMap(this,'apero')">🍷 Apéro</button>
+    <button class="filter-btn" data-cat="eau" onclick="filterFsMap(this,'eau')">🌊 Eau</button>
+  </div>
+  <div id="map-fullscreen" style="width:100%;height:100%"></div>
 </div>
 
 <!-- NAV -->
@@ -1426,7 +1434,7 @@ const CATEGORIES = {
   ateliers: { label:'Ateliers & créatif',    emoji:'🎨', color:'#FEF0E8', textColor:'#A04F1A' },
   nature:   { label:'Nature & balades',      emoji:'🌿', color:'#EAFAF0', textColor:'#1A7A40' },
   jeux:     { label:'Jeux',                  emoji:'🎲', color:'#EEF0F8', textColor:'#3B4F8C' },
-  parents:  { label:'Parentalité',           emoji:'🧑‍🍼', color:'#F0EBF8', textColor:'#7B4FA6' },
+  parents:  { label:'Pour les parents',       emoji:'🧑‍🍼', color:'#F0EBF8', textColor:'#7B4FA6' },
 };
 
 let leafletMap = null, leafletMarkers = [], allPlaces = [];
@@ -2831,42 +2839,55 @@ function setNav(tab) {
 }
 
 let fullscreenMap = null;
+let fsMarkers = [];
+let fsCat = 'all';
+
+function filterFsMap(btn, cat) {
+  document.querySelectorAll('#map-fs-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fsCat = cat;
+  updateFsMarkers();
+}
+
+function updateFsMarkers() {
+  fsMarkers.forEach(m => fullscreenMap.removeLayer(m));
+  fsMarkers = [];
+  allPlaces.forEach(p => {
+    if (!p.lat || !p.lng) return;
+    const cats = Array.isArray(p.cat) ? p.cat : [p.cat];
+    const primaryCat = (fsCat !== 'all' && cats.includes(fsCat)) ? fsCat : cats[0];
+    if (fsCat !== 'all' && !cats.includes(fsCat)) return;
+    const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="background:${cat.textColor};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);border:2px solid white">${cat.emoji}</div>`,
+      iconSize:[32,32], iconAnchor:[16,16]
+    });
+    const marker = L.marker([p.lat, p.lng], { icon })
+      .addTo(fullscreenMap)
+      .on('click', () => showPlaceDetail(p.name, p.cat, p.addr, p.rating));
+    fsMarkers.push(marker);
+  });
+}
 
 function initFullscreenMap() {
-  const container = document.getElementById('map-fullscreen');
   if (!fullscreenMap) {
     fullscreenMap = L.map('map-fullscreen', { zoomControl: true }).setView([44.8378, -0.5792], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution:'© OpenStreetMap © CartoDB', maxZoom:19
     }).addTo(fullscreenMap);
-
-    // Ajouter les marqueurs depuis allPlaces
-    allPlaces.forEach(p => {
-      if (!p.lat || !p.lng) return;
-      const cat = CATEGORIES[Array.isArray(p.cat) ? p.cat[0] : p.cat] || CATEGORIES.jeux_ext;
-      const icon = L.divIcon({
-        className:'',
-        html:`<div style="background:${cat.textColor};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);border:2px solid white">${cat.emoji}</div>`,
-        iconSize:[32,32], iconAnchor:[16,16]
-      });
-      L.marker([p.lat, p.lng], { icon })
-        .addTo(fullscreenMap)
-        .bindPopup(`<strong>${p.name}</strong><br>${p.addr||''}`);
-    });
-
-    // Marqueur position utilisateur
+    updateFsMarkers();
     if (userLat && userLng) {
       const userIcon = L.divIcon({
         className:'',
         html:`<div style="background:#4A90E2;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(74,144,226,.6)"></div>`,
         iconSize:[14,14], iconAnchor:[7,7]
       });
-      L.marker([userLat, userLng], { icon: userIcon }).addTo(fullscreenMap)
-        .bindTooltip('Vous êtes ici');
+      L.marker([userLat, userLng], { icon: userIcon }).addTo(fullscreenMap).bindTooltip('Vous êtes ici');
       fullscreenMap.setView([userLat, userLng], 14);
     }
   } else {
-    fullscreenMap.invalidateSize();
+    setTimeout(() => fullscreenMap.invalidateSize(), 100);
     if (userLat && userLng) fullscreenMap.setView([userLat, userLng], 14);
   }
 }

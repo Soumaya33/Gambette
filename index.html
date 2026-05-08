@@ -958,6 +958,7 @@ body {
       <button class="ef-btn" onclick="filterEventsCat(this,'sciences')">🔬 Sciences</button>
       <button class="ef-btn" onclick="filterEventsCat(this,'ateliers')">🎨 Ateliers</button>
       <button class="ef-btn" onclick="filterEventsCat(this,'nature')">🌿 Nature</button>
+      <button class="ef-btn" onclick="filterEventsCat(this,'parents')">🍷 Parents</button>
     </div>
 
     <!-- Filtres âge -->
@@ -1109,78 +1110,89 @@ body {
 
     <!-- FORMULAIRE ÉVÉNEMENT -->
     <div id="add-event-form" style="display:none">
-      <div class="form-group" style="position:relative">
-        <label class="form-label">Nom de l'événement</label>
+
+      <!-- LIEN EN PREMIER -->
+      <div class="form-group">
+        <label class="form-label">🔗 Lien de l'évènement <span style="color:var(--muted);font-weight:300">(optionnel)</span></label>
+        <input class="form-input" id="event-link-input" type="url" placeholder="https://…"
+          oninput="onEventLinkInput(this.value)">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Colle le lien du site ou de la page de l'événement</div>
+      </div>
+
+      <!-- NOM (obligatoire) -->
+      <div class="form-group">
+        <label class="form-label">Nom de l'évènement <span style="color:var(--terracotta)">*</span></label>
         <input class="form-input" id="event-name-input" type="text" placeholder="Ex : Atelier poterie, Ciné plein air…">
       </div>
-      <div class="form-group" style="position:relative">
-        <label class="form-label">Lieu (rechercher)</label>
-        <input class="form-input" id="event-place-input" type="text"
-          placeholder="Ex : Parc Bordelais, Darwin…"
-          oninput="searchEventPlace(this.value)"
-          autocomplete="off">
-        <div id="event-place-suggestions" class="place-suggestions"></div>
-      </div>
-      <div id="event-place-selected" style="display:none">
-        <div class="place-selected-card">
-          <div class="place-selected-icon">📍</div>
-          <div class="place-selected-info">
-            <div class="place-selected-name" id="event-sel-name"></div>
-            <div class="place-selected-addr" id="event-sel-addr"></div>
+
+      <!-- DÉTAILS EN ACCORDÉON -->
+      <div style="border:1.5px solid var(--sand);border-radius:12px;overflow:hidden;margin-bottom:14px">
+        <button type="button" onclick="toggleEventDetails()" 
+          style="width:100%;padding:12px 16px;background:var(--cream2);border:none;text-align:left;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:var(--charcoal)">
+          <span>➕ Ajouter des infos (optionnel)</span>
+          <span id="event-details-arrow">▼</span>
+        </button>
+        <div id="event-details-body" style="display:none;padding:14px 16px;display:none;flex-direction:column;gap:12px">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Date de début</label>
+              <input class="form-input" id="event-date-start" type="date">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Date de fin</label>
+              <input class="form-input" id="event-date-end" type="date">
+            </div>
           </div>
-          <button class="place-selected-change" onclick="resetEventPlace()">Changer</button>
+
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Heure</label>
+            <input class="form-input" id="event-time" type="text" placeholder="Ex : 10h–12h, dès 14h…">
+          </div>
+
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Lieu</label>
+            <input class="form-input" id="event-place-input" type="text"
+              placeholder="Ex : Parc Bordelais, Darwin…"
+              oninput="searchEventPlace(this.value)" autocomplete="off">
+            <div id="event-place-suggestions" class="place-suggestions"></div>
+          </div>
+          <div id="event-place-selected" style="display:none">
+            <div class="place-selected-card">
+              <div class="place-selected-icon">📍</div>
+              <div class="place-selected-info">
+                <div class="place-selected-name" id="event-sel-name"></div>
+                <div class="place-selected-addr" id="event-sel-addr"></div>
+              </div>
+              <button class="place-selected-change" onclick="resetEventPlace()">Changer</button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Type d'activité</label>
+            <div class="form-cats">
+              <div class="form-cat" onclick="toggleAddTag(this)">🎵 Musique</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">🎭 Théâtre</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">⚽ Sport</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">🖼️ Exposition</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">🔬 Sciences</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">🎨 Atelier</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">🌿 Nature</div>
+              <div class="form-cat" onclick="toggleAddTag(this)">🍷 Parents</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="event-desc" rows="2"
+              placeholder="Ce qui rend cet événement spécial…"
+              style="resize:none;line-height:1.5"></textarea>
+          </div>
+
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-group">
-          <label class="form-label">Date de début</label>
-          <input class="form-input" id="event-date-start" type="date">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Date de fin</label>
-          <input class="form-input" id="event-date-end" type="date">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Heure</label>
-        <input class="form-input" id="event-time" type="text" placeholder="Ex : 10h–12h, dès 14h…">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Type d'activité</label>
-        <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTag(this)">🌳 Jeux extérieur</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Culture & biblio</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🍷 Apéro parents</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎭 Spectacle</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🎬 Ciné</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🌊 Au bord de l'eau</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Âge recommandé</label>
-        <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTag(this)">👶 0–2 ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🧒 3–5 ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">🧑 6–10 ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">👦 10+ ans</div>
-          <div class="form-cat" onclick="toggleAddTag(this)">👨‍👩‍👧 Tout âge</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Tarif</label>
-        <div class="form-cats">
-          <div class="form-cat" onclick="toggleAddTagSingle(this)">💚 Gratuit</div>
-          <div class="form-cat" onclick="toggleAddTagSingle(this)">💰 Payant</div>
-          <div class="form-cat" onclick="toggleAddTagSingle(this)">🎟️ Sur réservation</div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Description (optionnel)</label>
-        <textarea class="form-input" id="event-desc" rows="2"
-          placeholder="Ce qui rend cet événement spécial…"
-          style="resize:none;line-height:1.5"></textarea>
-      </div>
-      <button class="btn-submit" onclick="submitNewEvent()">Proposer cet événement ✨</button>
+
+      <button class="btn-submit" onclick="submitNewEvent()">Proposer cet évènement ✨</button>
     </div>
 
   </div>
@@ -1394,6 +1406,7 @@ const CATEGORIES = {
   sciences: { label:'Sciences & apprentissage', emoji:'🔬', color:'#E8F0FB', textColor:'#1A4FA0' },
   ateliers: { label:'Ateliers & créatif',    emoji:'🎨', color:'#FEF0E8', textColor:'#A04F1A' },
   nature:   { label:'Nature & balades',      emoji:'🌿', color:'#EAFAF0', textColor:'#1A7A40' },
+  parents:  { label:'Pour les parents',       emoji:'🍷', color:'#FDF3E7', textColor:'#854F0B' },
 };
 
 let leafletMap = null, leafletMarkers = [], allPlaces = [];
@@ -1810,7 +1823,7 @@ function renderPlaceCards(places) {
   }).join('');
 }
 
-function escStr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function escStr(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
 function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : (s||''); }
 
 // ── ANALYTICS ──
@@ -2382,9 +2395,26 @@ function resetEventPlace() {
   document.getElementById('event-place-selected').style.display = 'none';
 }
 
+function toggleEventDetails() {
+  const body = document.getElementById('event-details-body');
+  const arrow = document.getElementById('event-details-arrow');
+  const isOpen = body.style.display === 'flex';
+  body.style.display = isOpen ? 'none' : 'flex';
+  arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+function onEventLinkInput(val) {
+  // Auto-ouvrir les détails si un lien est collé
+  if (val.startsWith('http')) {
+    const body = document.getElementById('event-details-body');
+    if (body.style.display !== 'flex') toggleEventDetails();
+  }
+}
 async function submitNewEvent() {
   const name = document.getElementById('event-name-input').value.trim();
-  if (!name) { alert('Merci d\'indiquer le nom de l\'événement'); return; }
+  if (!name) { alert('Merci d\'indiquer le nom de l\'évènement'); return; }
+
+  const lien = document.getElementById('event-link-input')?.value.trim() || null;
 
   const evt = {
     nom: name,
@@ -2395,24 +2425,33 @@ async function submitNewEvent() {
     date_fin: document.getElementById('event-date-end').value || null,
     heure: document.getElementById('event-time').value || null,
     description: document.getElementById('event-desc').value.trim() || null,
+    lien_reservation: lien,
     valide: false,
   };
 
+  const btn = document.querySelector('#add-event-form .btn-submit');
   try {
     await supaFetch('evenements', { method: 'POST', body: JSON.stringify(evt) });
     logAction('propose_event', name);
+    btn.textContent = '✅ Merci pour ta proposition !';
+    btn.style.background = 'var(--forest)';
+    setTimeout(() => {
+      closeModalById('add-modal');
+      btn.textContent = 'Proposer cet évènement ✨';
+      btn.style.background = '';
+      showToast('💛 Merci ! Ta proposition sera visible dès validation.');
+      document.getElementById('event-name-input').value = '';
+      if (document.getElementById('event-link-input')) document.getElementById('event-link-input').value = '';
+      document.getElementById('event-date-start').value = '';
+      document.getElementById('event-date-end').value = '';
+      document.getElementById('event-time').value = '';
+      document.getElementById('event-desc').value = '';
+    }, 2000);
   } catch(e) {
-    console.warn('Erreur Supabase événement', e);
+    console.warn('Erreur proposition évènement', e);
+    btn.textContent = '❌ Erreur, réessaie';
+    setTimeout(() => { btn.textContent = 'Proposer cet évènement ✨'; }, 2000);
   }
-
-  const btn = document.querySelector('#add-event-form .btn-submit');
-  btn.textContent = '⏳ En attente de validation…';
-  btn.style.background = '#2D5241';
-  setTimeout(() => {
-    closeModalById('add-modal');
-    btn.textContent = 'Proposer cet événement ✨';
-    btn.style.background = '';
-  }, 2000);
 }
 
 function resetPlaceSearch() {
@@ -2548,13 +2587,14 @@ async function submitNewPlace() {
 
     // Succès
     logAction('propose_place', addSelectedPlace.name);
-    btn.textContent = '⏳ En attente de validation…';
-    btn.style.background = '#2D5241';
+    btn.textContent = '✅ Merci pour ta proposition !';
+    btn.style.background = 'var(--forest)';
     setTimeout(() => {
       closeModalById('add-modal');
       btn.textContent = 'Proposer ce lieu ✨';
       btn.style.background = '';
       resetPlaceSearch();
+      showToast('💛 Merci ! Ta proposition sera visible dès validation.');
     }, 2000);
 
   } catch(e) {
@@ -2729,18 +2769,11 @@ function setNav(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-'+tab)?.classList.add('active');
 
-  const favsSection = document.getElementById('favs-section');
-  const eventsPage = document.getElementById('events-page');
   const body = document.querySelector('.body');
+  const filtersEl = document.getElementById('filters');
 
-  // Réinitialiser tous les enfants
-  Array.from(body.children).forEach(el => {
-    if (el.id === 'favs-section' || el.id === 'events-page') {
-      el.style.display = 'none';
-    } else {
-      el.style.display = '';
-    }
-  });
+  // Masquer/afficher les filtres catégories selon l'onglet
+  if (filtersEl) filtersEl.style.display = (tab === 'events' || tab === 'favs') ? 'none' : '';
 
   if (tab === 'favs') {
     Array.from(body.children).forEach(el => {

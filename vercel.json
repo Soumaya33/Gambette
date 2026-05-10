@@ -1,6 +1,5 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/vadrou-admin.html" },
-    { "source": "/", "destination": "/index.html" }
+    { "source": "/admin", "destination": "/admin.html" }
   ]
 }

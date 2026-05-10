@@ -1,5 +1,25 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" }
+  ],
+  "headers": [
+    {
+      "source": "/admin",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.html",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        }
+      ]
+    }
   ]
 }

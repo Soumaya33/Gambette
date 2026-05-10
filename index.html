@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1E3A2F">
-<title>Gambette — Sorties à Bordeaux</title>
+<title>Vadrou — Sorties à Bordeaux</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -800,7 +800,7 @@ body {
 
 <!-- SPLASH -->
 <div id="splash">
-  <div class="splash-logo">Gam<em>bette</em></div>
+  <div class="splash-logo">Vad<em>rou</em></div>
   <div class="splash-sub">Bordeaux · Sorties en famille</div>
   <div class="splash-loader">
     <div class="splash-dot"></div>
@@ -812,7 +812,7 @@ body {
 <!-- HEADER -->
 <div id="header">
   <div class="header-top">
-    <div class="logo">Gam<em>bette</em></div>
+    <div class="logo">Vad<em>rou</em></div>
     <div class="header-actions">
       <div class="btn-icon" onclick="openAddModal()">＋</div>
       <div class="btn-icon" onclick="openAdmin()">👤</div>
@@ -1030,7 +1030,7 @@ body {
   <div class="modal" style="padding-bottom:36px">
     <div class="modal-handle"></div>
     <div class="modal-title">Que veux-tu ajouter ?</div>
-    <div class="modal-sub">Aide la communauté Gambette à découvrir de nouvelles pépites 🙌</div>
+    <div class="modal-sub">Aide la communauté Vadrou à découvrir de nouvelles pépites 🙌</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
       <div class="choice-btn" onclick="closeModalById('choice-modal');openAddModal('lieu')">
         <div class="choice-btn-icon" style="background:#E8F4EF">📍</div>
@@ -1298,7 +1298,7 @@ body {
       <div class="admin-login">
         <div class="admin-login-icon">🔐</div>
         <div class="admin-login-title">Espace gestionnaire</div>
-        <div class="admin-login-sub">Accès réservé à l'équipe Gambette</div>
+        <div class="admin-login-sub">Accès réservé à l'équipe Vadrou</div>
       </div>
       <div class="form-group">
         <label class="form-label">Mot de passe</label>
@@ -2049,7 +2049,7 @@ function toggleMoreFilters() {
 }
 
 // ── ADMIN ──
-const ADMIN_PASSWORD = 'gambette2025';
+const ADMIN_PASSWORD = 'vadrou2025';
 let adminEditingId = null;
 const placeOverrides = {}; // { placeId: { label, desc, age } }
 
@@ -2191,7 +2191,7 @@ function showPlaceDetail(name, cat, addr, rating) {
   ].join('');
   const override = placeOverrides[currentPlaceId] || {};
   document.getElementById('detail-desc').textContent =
-    override.desc || 'Lieu sélectionné par la communauté Gambette. Parfait pour une sortie en famille à Bordeaux !';
+    override.desc || 'Lieu sélectionné par la communauté Vadrou. Parfait pour une sortie en famille à Bordeaux !';
 
   renderReviews(currentPlaceId);
   updateFavBtn(name);

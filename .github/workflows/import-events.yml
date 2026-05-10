@@ -1,0 +1,29 @@
+name: Import evenements Vadrou
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Nettoyage evenements passes
+        run: node scripts/cleanup-events.js
+
+      - name: Import OpenAgenda
+        run: node scripts/import-events-v2.js
+
+      - name: Scraping BilletReduc
+        run: node scripts/scrape-billetreduc.js --insert

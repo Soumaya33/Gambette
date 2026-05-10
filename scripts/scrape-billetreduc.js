@@ -344,7 +344,7 @@ async function main() {
     return;
   }
 
-  console.log('\n🎭 Scraper BilletRéduc v3 → Gambette');
+  console.log('\n🎭 Scraper BilletRéduc v3 → Vadrou');
   console.log(INSERT_TO_SUPABASE ? '   Mode : CSV + Supabase\n' : '   Mode : CSV uniquement\n');
 
   // ÉTAPE 1 : Collecter les URLs

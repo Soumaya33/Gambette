@@ -1,9 +1,9 @@
 name: Import evenements Vadrou
 
 on:
-schedule:
-  - cron: '0 6 * * *'   # 8h heure française (UTC+2)
-  - cron: '0 12 * * *'  # 14h heure française (UTC+2)
+  schedule:
+    - cron: '0 6 * * *'   # 8h heure française (UTC+2)
+    - cron: '0 12 * * *'  # 14h heure française (UTC+2)
   workflow_dispatch:
 
 jobs:

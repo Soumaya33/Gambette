@@ -380,8 +380,9 @@ body {
   position:fixed;
   inset:0;
   bottom:60px; /* hauteur nav */
-  z-index:50;
+  z-index:100;
   flex-direction:column;
+  background:#fff;
 }
 #map-fullscreen {
   flex:1;
@@ -2907,6 +2908,33 @@ function scrollToEvents() {
 
 // ── FORM CATS (legacy) ──
 function toggleCat(el) { el.classList.toggle('sel'); }
+
+// ── BOUTON RETOUR ANDROID ──
+let currentTab = 'home';
+const originalSetNav = setNav;
+function setNav(tab) {
+  if (tab !== currentTab) {
+    history.pushState({ tab: currentTab }, '', '');
+  }
+  currentTab = tab;
+  originalSetNav(tab);
+}
+
+window.addEventListener('popstate', (e) => {
+  // Fermer les modals ouverts en priorité
+  const modal = document.querySelector('.modal-overlay[style*="flex"], .bottom-sheet[style*="flex"]');
+  if (modal) {
+    modal.style.display = 'none';
+    history.pushState(null, '', '');
+    return;
+  }
+  // Sinon revenir à l'accueil si on n'y est pas déjà
+  if (currentTab !== 'home') {
+    originalSetNav('home');
+    currentTab = 'home';
+    history.pushState(null, '', '');
+  }
+});
 </script>
 </body>
 </html>

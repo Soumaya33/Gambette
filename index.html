@@ -2794,6 +2794,8 @@ function removeEventFav(nom) {
   localStorage.setItem('gambette_event_favs', JSON.stringify(eventFavorites));
   renderFavs();
 }
+let currentTab = 'home';
+
 function setNav(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-'+tab)?.classList.add('active');
@@ -2801,6 +2803,12 @@ function setNav(tab) {
   const body = document.querySelector('.body');
   const filtersEl = document.getElementById('filters');
   const mapPage = document.getElementById('map-fullscreen-page');
+
+  // Gérer l'historique pour le bouton retour Android
+  if (tab !== currentTab) {
+    history.pushState({ tab: tab }, '', '');
+  }
+  currentTab = tab;
 
   // Masquer la carte plein écran par défaut
   mapPage.style.display = 'none';
@@ -2838,6 +2846,13 @@ function setNav(tab) {
     });
   }
 }
+
+// Bouton retour Android
+window.addEventListener('popstate', () => {
+  if (currentTab !== 'home') {
+    setNav('home');
+  }
+});
 
 let fullscreenMap = null;
 let fsMarkers = [];
@@ -2909,32 +2924,6 @@ function scrollToEvents() {
 // ── FORM CATS (legacy) ──
 function toggleCat(el) { el.classList.toggle('sel'); }
 
-// ── BOUTON RETOUR ANDROID ──
-let currentTab = 'home';
-const originalSetNav = setNav;
-function setNav(tab) {
-  if (tab !== currentTab) {
-    history.pushState({ tab: currentTab }, '', '');
-  }
-  currentTab = tab;
-  originalSetNav(tab);
-}
-
-window.addEventListener('popstate', (e) => {
-  // Fermer les modals ouverts en priorité
-  const modal = document.querySelector('.modal-overlay[style*="flex"], .bottom-sheet[style*="flex"]');
-  if (modal) {
-    modal.style.display = 'none';
-    history.pushState(null, '', '');
-    return;
-  }
-  // Sinon revenir à l'accueil si on n'y est pas déjà
-  if (currentTab !== 'home') {
-    originalSetNav('home');
-    currentTab = 'home';
-    history.pushState(null, '', '');
-  }
-});
 </script>
 </body>
 </html>

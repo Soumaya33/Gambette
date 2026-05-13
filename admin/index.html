@@ -534,6 +534,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         </div>
       </div>
 
+      <!-- COUP DE CŒUR ÉVÉNEMENT -->
+      <div>
+        <div class="section-title">💛 À ne pas rater</div>
+        <div class="valid-toggle">
+          <button class="vtbtn" id="evbtn-crush-true" onclick="setEvCrush(true)">💛 Oui — mis en avant sur l'accueil</button>
+          <button class="vtbtn" id="evbtn-crush-false" onclick="setEvCrush(false)">○ Non</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Les évènements "À ne pas rater" apparaissent en premier sur l'accueil avec un badge doré.</div>
+      </div>
+
     </div>
 
     <div class="action-bar" id="ev-action-bar" style="display:none">
@@ -1257,7 +1267,7 @@ async function loadStats() {
   }
 }
 let allEvents = [], filteredEvents = [];
-let currentEvId = null, currentEvValid = false;
+let currentEvId = null, currentEvValid = false, currentEvCrush = false;
 let evStatusFilter = 'all';
 
 // ── SÉLECTION MULTIPLE ──
@@ -1551,6 +1561,10 @@ function selectEvent(id) {
   document.getElementById('evbtn-true').className = 'vtbtn'+(e.valide?' sel-valid':'');
   document.getElementById('evbtn-false').className = 'vtbtn'+(!e.valide?' sel-invalid':'');
 
+  currentEvCrush = e.coup_de_coeur || false;
+  document.getElementById('evbtn-crush-true').className = 'vtbtn'+(currentEvCrush?' sel-valid':'');
+  document.getElementById('evbtn-crush-false').className = 'vtbtn'+(!currentEvCrush?' sel-invalid':'');
+
   renderEventList();
 }
 
@@ -1560,6 +1574,20 @@ function setEvValid(v) {
   document.getElementById('evbtn-false').className = 'vtbtn'+(!v?' sel-invalid':'');
   // Auto-save immédiatement
   autoSaveEvValid(v);
+}
+function setEvCrush(v) {
+  currentEvCrush = v;
+  document.getElementById('evbtn-crush-true').className = 'vtbtn'+(v?' sel-valid':'');
+  document.getElementById('evbtn-crush-false').className = 'vtbtn'+(!v?' sel-invalid':'');
+  if (!currentEvId) return;
+  supa(`evenements?id=eq.${currentEvId}`, {
+    method:'PATCH', body:JSON.stringify({ coup_de_coeur: v }),
+    headers:{'Prefer':'return=minimal'}
+  }).then(() => {
+    const idx = allEvents.findIndex(x=>x.id===currentEvId);
+    if (idx>=0) allEvents[idx].coup_de_coeur = v;
+    showToast(v ? '💛 Mis en avant sur l'accueil' : '○ Coup de cœur retiré');
+  }).catch(e => showToast('❌ Erreur : '+e.message));
 }
 
 async function autoSaveEvValid(v) {
@@ -1596,6 +1624,7 @@ async function saveEvent() {
     image_url:       document.getElementById('ef-image').value.trim()||null,
     lien_reservation:document.getElementById('ef-lien').value.trim()||null,
     valide:          currentEvValid,
+    coup_de_coeur:   currentEvCrush,
   };
   Object.keys(patch).forEach(k=>patch[k]===undefined && delete patch[k]);
   try {

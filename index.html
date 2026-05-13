@@ -395,6 +395,15 @@ body {
   position:relative; z-index:1;
 }
 #map { width:100%; height:220px; display:block; }
+/* Boutons zoom carte plein écran — positionnés en bas à droite */
+#map-fullscreen-page .leaflet-control-zoom {
+  position: absolute !important;
+  bottom: 20px !important;
+  right: 12px !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 1001 !important;
+}
 .leaflet-control-zoom { z-index:2 !important; }
 .modal-open .leaflet-control-zoom { display:none !important; }
 }
@@ -865,14 +874,6 @@ body {
     <div class="sec-title">Carte</div>
     <button class="sec-link" onclick="setNav('map');document.getElementById('nav-map').click()">Plein écran →</button>
   </div>
-
-  <!-- Recherche lieux accueil -->
-  <div style="position:relative;margin-bottom:14px;z-index:10">
-    <input id="home-search-input" type="text" placeholder="🔍 Rechercher un lieu…"
-      style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:var(--white)"
-      oninput="searchHomePlaces(this.value)" autocomplete="off">
-    <div id="home-search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border-radius:12px;box-shadow:0 8px 24px rgba(28,28,26,.12);overflow:hidden;margin-top:4px;max-height:220px;overflow-y:auto;z-index:200"></div>
-  </div>
   <div id="map-container">
     <div id="map"></div>
   </div>
@@ -970,13 +971,6 @@ body {
       <div class="sec-title">📅 Tous les évènements</div>
     </div>
 
-    <!-- Recherche événements -->
-    <div style="position:relative;margin-bottom:12px">
-      <input id="events-search-input" type="text" placeholder="🔍 Rechercher un évènement…"
-        style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:var(--white)"
-        oninput="searchEvents(this.value)" autocomplete="off">
-    </div>
-
     <!-- Filtres catégories -->
     <div class="events-filters" id="ep-cat-filters">
       <button class="ef-btn active" onclick="filterEventsCat(this,'all')">Tout</button>
@@ -1010,15 +1004,16 @@ body {
 
 <!-- PAGE CARTE PLEIN ÉCRAN -->
 <div id="map-fullscreen-page">
-  <!-- Barre de recherche + filtres carte plein écran -->
-  <div style="position:absolute;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,.97);padding:10px 12px 0;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <div id="map-fs-filters" style="position:absolute;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,.97);padding:10px 12px 0;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+    <!-- Barre de recherche -->
     <div style="position:relative;margin-bottom:8px">
       <input id="fs-search-input" type="text" placeholder="🔍 Rechercher un lieu…"
         style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:var(--cream)"
         oninput="searchFsMap(this.value)" autocomplete="off">
       <div id="fs-search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border-radius:12px;box-shadow:0 8px 24px rgba(28,28,26,.12);overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto;z-index:1001"></div>
     </div>
-    <div id="map-fs-filters" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px">
+    <!-- Filtres catégories -->
+    <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px">
       <button class="filter-btn active" data-cat="all" onclick="filterFsMap(this,'all')">Tout</button>
       <button class="filter-btn" data-cat="jeux_ext" onclick="filterFsMap(this,'jeux_ext')">🌳 Jeux ext.</button>
       <button class="filter-btn" data-cat="jeux_int" onclick="filterFsMap(this,'jeux_int')">🎲 Jeux int.</button>
@@ -1686,26 +1681,24 @@ function renderHomeEvents(events) {
 function renderEventsPage() {
   const container = document.getElementById('events-page-list');
   if (!container) return;
+
   let filtered = allEvents;
   if (evPageCat !== 'all') filtered = filtered.filter(e => e.categorie === evPageCat);
   if (evPageAge !== 'all') {
     const [min, max] = evPageAge === '12+' ? [12, 99] : evPageAge.split('-').map(Number);
     filtered = filtered.filter(e => {
       if (e.age_min === null && e.age_max === null) return true;
-      const eMin = e.age_min ?? 0; const eMax = e.age_max ?? 99;
+      const eMin = e.age_min ?? 0;
+      const eMax = e.age_max ?? 99;
       return eMin <= (max ?? 99) && eMax >= min;
     });
   }
-  if (eventsSearchQuery) {
-    filtered = filtered.filter(e =>
-      e.nom.toLowerCase().includes(eventsSearchQuery) ||
-      (e.adresse||'').toLowerCase().includes(eventsSearchQuery)
-    );
-  }
+
   if (!filtered.length) {
-    container.innerHTML = `<div class="loading-card"><div style="font-size:28px">🔍</div><div class="loading-text">Aucun évènement trouvé</div></div>`;
+    container.innerHTML = `<div class="loading-card"><div style="font-size:28px">🔍</div><div class="loading-text">Aucun évènement pour ces filtres</div></div>`;
     return;
   }
+
   container.innerHTML = filtered.map(evt => {
     const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
     const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
@@ -1715,10 +1708,12 @@ function renderEventsPage() {
     const hasImg = evt.image_url && evt.image_url.startsWith('http');
     const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
     const uid = 'ev_' + Math.random().toString(36).slice(2,8);
+
     return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
       ${hasImg
         ? `<div style="height:160px;overflow:hidden;border-radius:12px 12px 0 0;background:var(--cream2)">
-             <img src="${evt.image_url}" alt="${evt.nom}" style="width:100%;height:160px;object-fit:cover;display:block"
+             <img src="${evt.image_url}" alt="${evt.nom}"
+               style="width:100%;height:160px;object-fit:cover;display:block"
                onerror="this.parentNode.style.display='none';document.getElementById('ph_${uid}').style.display='flex'">
            </div>
            <div id="ph_${uid}" class="event-img-placeholder" style="background:${cat.textColor}22;display:none">${cat.emoji}</div>`
@@ -1732,8 +1727,10 @@ function renderEventsPage() {
           </div>
           <div style="flex:1">
             <div class="event-card-title">${evt.nom}</div>
-            <div class="event-card-meta">${addr ? '📍 ' + addr : ''}${heure ? ' · 🕐 ' + heure : ''}</div>
-            <div class="event-tags">
+            <div class="event-card-meta">
+              ${addr ? '📍 ' + addr : ''}${heure ? ' · 🕐 ' + heure : ''}
+            </div>
+            <div class="event-card-tags event-tags">
               <span class="etag">${cat.emoji} ${cat.label}</span>
               ${tarif ? `<span class="etag">${tarif}</span>` : ''}
               ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
@@ -1743,6 +1740,20 @@ function renderEventsPage() {
       </div>
     </div>`;
   }).join('');
+}
+
+// Filtres page événements
+function filterEventsCat(btn, cat) {
+  document.querySelectorAll('#ep-cat-filters .ef-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  evPageCat = cat;
+  renderEventsPage();
+}
+function filterEventsAge(btn, age) {
+  document.querySelectorAll('#ep-age-filters .ef-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  evPageAge = age;
+  renderEventsPage();
 }
 
 // Fiche événement enrichie
@@ -2829,7 +2840,6 @@ function setNav(tab) {
     // Masquer complètement la mini carte
     const mc = document.getElementById('map-container');
     if (mc) { mc.style.display='none'; mc.style.visibility='hidden'; mc.style.zIndex='-1'; }
-    // Afficher la carte plein écran
     mapPage.style.display = 'flex';
     initFullscreenMap();
   } else if (tab === 'favs') {
@@ -2901,10 +2911,12 @@ function updateFsMarkers() {
 
 function initFullscreenMap() {
   if (!fullscreenMap) {
-    fullscreenMap = L.map('map-fullscreen', { zoomControl: true }).setView([44.8378, -0.5792], 13);
+    fullscreenMap = L.map('map-fullscreen', { zoomControl: false }).setView([44.8378, -0.5792], 13);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution:'© OpenStreetMap © CartoDB', maxZoom:19
     }).addTo(fullscreenMap);
+    // Boutons zoom en bas à droite
+    L.control.zoom({ position: 'bottomright' }).addTo(fullscreenMap);
     updateFsMarkers();
     if (userLat && userLng) {
       const userIcon = L.divIcon({
@@ -2937,35 +2949,6 @@ function scrollToEvents() {
 // ── FORM CATS (legacy) ──
 function toggleCat(el) { el.classList.toggle('sel'); }
 
-// ── RECHERCHE LIEUX ACCUEIL ──
-function searchHomePlaces(val) {
-  const box = document.getElementById('home-search-results');
-  if (!val || val.length < 2) { box.style.display='none'; return; }
-  const results = allPlaces.filter(p =>
-    p.name.toLowerCase().includes(val.toLowerCase()) ||
-    (p.addr||'').toLowerCase().includes(val.toLowerCase())
-  ).slice(0, 6);
-  if (!results.length) { box.style.display='none'; return; }
-  box.innerHTML = results.map(p => {
-    const primaryCat = Array.isArray(p.cat) ? p.cat[0] : p.cat;
-    const cat = CATEGORIES[primaryCat] || CATEGORIES.jeux_ext;
-    return `<div class="place-suggestion-item" onclick="selectHomePlace('${escStr(p.name)}','${primaryCat}','${escStr(p.addr||'')}','${p.rating||''}')">
-      <div class="place-suggestion-icon" style="background:${cat.color}">${cat.emoji}</div>
-      <div>
-        <div class="place-suggestion-name">${p.name}</div>
-        <div class="place-suggestion-addr">${p.addr||'Bordeaux'}</div>
-      </div>
-    </div>`;
-  }).join('');
-  box.style.display = 'block';
-}
-
-function selectHomePlace(name, cat, addr, rating) {
-  document.getElementById('home-search-input').value = '';
-  document.getElementById('home-search-results').style.display = 'none';
-  showPlaceDetail(name, cat, addr, rating);
-}
-
 // ── RECHERCHE CARTE PLEIN ÉCRAN ──
 function searchFsMap(val) {
   const box = document.getElementById('fs-search-results');
@@ -2994,13 +2977,6 @@ function selectFsPlace(name, cat, addr, rating, lat, lng) {
   document.getElementById('fs-search-results').style.display = 'none';
   if (fullscreenMap && lat && lng) fullscreenMap.setView([lat, lng], 16);
   showPlaceDetail(name, cat, addr, rating);
-}
-
-// ── RECHERCHE ÉVÉNEMENTS ──
-let eventsSearchQuery = '';
-function searchEvents(val) {
-  eventsSearchQuery = val.toLowerCase();
-  renderEventsPage();
 }
 
 // ── TOAST ──

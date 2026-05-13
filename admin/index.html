@@ -1586,7 +1586,7 @@ function setEvCrush(v) {
   }).then(() => {
     const idx = allEvents.findIndex(x=>x.id===currentEvId);
     if (idx>=0) allEvents[idx].coup_de_coeur = v;
-    showToast(v ? '💛 Mis en avant sur l'accueil' : '○ Coup de cœur retiré');
+    showToast(v ? '💛 Mis en avant sur l\'accueil' : '○ Coup de cœur retiré');
   }).catch(e => showToast('❌ Erreur : '+e.message));
 }
 

@@ -1,25 +1,16 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/privacy-policy", "destination": "/privacy-policy.html" }
   ],
   "headers": [
     {
       "source": "/admin",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
-        }
-      ]
+      "headers": [{ "key": "Content-Type", "value": "text/html; charset=utf-8" }]
     },
     {
       "source": "/(.*)\\.html",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/html; charset=utf-8"
-        }
-      ]
+      "headers": [{ "key": "Content-Type", "value": "text/html; charset=utf-8" }]
     }
   ]
 }

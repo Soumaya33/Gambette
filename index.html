@@ -2817,6 +2817,14 @@ function setNav(tab) {
   if (filtersEl) filtersEl.style.display = (tab === 'events' || tab === 'favs') ? 'none' : '';
 
   if (tab === 'map') {
+    // Masquer complètement la mini carte de l'accueil
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) {
+      mapContainer.style.display = 'none';
+      mapContainer.style.visibility = 'hidden';
+      mapContainer.style.position = 'absolute';
+      mapContainer.style.zIndex = '-1';
+    }
     // Afficher la carte plein écran
     mapPage.style.display = 'flex';
     // Initialiser ou rafraîchir la carte plein écran
@@ -2835,7 +2843,14 @@ function setNav(tab) {
     renderEventsPage();
     logAction('view_events_page');
   } else {
-    // Home
+    // Home — restaurer la mini carte
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) {
+      mapContainer.style.display = '';
+      mapContainer.style.visibility = '';
+      mapContainer.style.position = '';
+      mapContainer.style.zIndex = '';
+    }
     Array.from(body.children).forEach(el => {
       if (el.id === 'map-fullscreen-page') return;
       if (el.id === 'favs-section' || el.id === 'events-page') {

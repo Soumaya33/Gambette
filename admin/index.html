@@ -135,6 +135,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
 /* ── BOUTON RETOUR MOBILE ── */
 .mobile-back-btn{display:none;align-items:center;gap:8px;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--cream);cursor:pointer;padding:0;flex-shrink:0;}
 .mobile-back-btn::before{content:'←';font-size:16px;}
+.mobile-only{display:none;}
+@media(max-width:767px){.mobile-only{display:flex;}}
 
 /* ── RESPONSIVE MOBILE (< 768px) ── */
 @media(max-width:767px){
@@ -363,6 +365,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
     </div>
 
     <div class="action-bar" id="action-bar" style="display:none">
+      <button class="btn btn-skip mobile-only" onclick="closeMobileEditor()" title="Retour à la liste" style="font-size:18px;padding:10px 12px">←</button>
       <button class="btn btn-delete" onclick="deletePlace()">🗑️</button>
       <button class="btn btn-skip" onclick="nextPlace()">Suivant →</button>
       <button class="btn btn-save" onclick="savePlace()">💾 Enregistrer</button>
@@ -533,6 +536,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
     </div>
 
     <div class="action-bar" id="ev-action-bar" style="display:none">
+      <button class="btn btn-skip mobile-only" onclick="closeMobileEditor()" title="Retour à la liste" style="font-size:18px;padding:10px 12px">←</button>
       <button class="btn btn-delete" onclick="deleteEvent()">🗑️</button>
       <button class="btn btn-skip" onclick="duplicateEvent()" title="Dupliquer">⧉</button>
       <button class="btn btn-skip" onclick="nextEvent()">Suivant →</button>

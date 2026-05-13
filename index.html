@@ -223,6 +223,23 @@ body {
   color:var(--forest);
 }
 .filter-btn:not(.active):active{background:rgba(246,241,233,.1)}
+/* Variante carte plein écran (fond blanc) */
+.filter-btn-map {
+  flex-shrink:0;
+  padding:7px 13px; margin-right:6px;
+  border-radius:30px; border:1.5px solid var(--sand);
+  background:var(--white);
+  font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:500;
+  color:var(--muted);
+  cursor:pointer; white-space:nowrap;
+  transition:all .2s;
+}
+.filter-btn-map.active {
+  background:var(--forest); border-color:var(--forest);
+  color:var(--cream); font-weight:600;
+}
+.filter-btn-map:not(.active):active{background:var(--cream2);}
 
 /* ── BODY ── */
 .body { padding:22px 22px 100px; }
@@ -880,7 +897,7 @@ body {
 
   <!-- NEAR ME -->
   <div class="sec-hd" style="margin-top:20px">
-    <div class="sec-title" id="near-me-title">✨ Nos suggestions</div>
+    <div class="sec-title" id="near-me-title">📍 À découvrir près de toi</div>
     <button class="sec-link" id="geo-btn" onclick="requestGeolocation()">📍 Me localiser</button>
   </div>
   <div class="hscroll" id="places-scroll">
@@ -892,7 +909,7 @@ body {
 
   <!-- COUPS DE COEUR -->
   <div class="sec-hd" style="margin-top:28px">
-    <div class="sec-title">💛 Nos coups de cœur</div>
+    <div class="sec-title">💛 Lieux coups de cœur</div>
   </div>
   <div class="crush-scroll" id="crush-grid">
     <!-- Chargé depuis Supabase -->
@@ -903,7 +920,7 @@ body {
 
   <!-- EVENTS -->
   <div class="sec-hd" style="margin-top:28px">
-    <div class="sec-title">Évènements à venir</div>
+    <div class="sec-title">Évènements à ne pas rater 💛</div>
     <button class="sec-link" onclick="setNav('events');scrollToEvents()">Voir tout →</button>
   </div>
   <div id="events-list">
@@ -971,6 +988,29 @@ body {
       <div class="sec-title">📅 Tous les évènements</div>
     </div>
 
+    <!-- Recherche + filtre dates -->
+    <div style="padding:0 0 10px;display:flex;gap:8px;align-items:center">
+      <div style="flex:1;position:relative">
+        <input id="ep-search" type="text" placeholder="🔍 Rechercher un évènement…"
+          style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--white)"
+          oninput="filterEventsAll()">
+      </div>
+    </div>
+
+    <!-- Filtre période -->
+    <div class="events-filters" id="ep-date-filters" style="padding-bottom:4px">
+      <button class="ef-btn active" onclick="filterEventsPeriod(this,'all')">Toutes dates</button>
+      <button class="ef-btn" onclick="filterEventsPeriod(this,'today')">Aujourd'hui</button>
+      <button class="ef-btn" onclick="filterEventsPeriod(this,'week')">Cette semaine</button>
+      <button class="ef-btn" onclick="filterEventsPeriod(this,'weekend')">Ce week-end</button>
+      <button class="ef-btn" onclick="filterEventsPeriod(this,'month')">Ce mois</button>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <input type="date" id="ep-date-from" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:11px;background:var(--white);color:var(--charcoal);outline:none" onchange="filterEventsAll()">
+        <span style="font-size:11px;color:var(--muted)">→</span>
+        <input type="date" id="ep-date-to" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:11px;background:var(--white);color:var(--charcoal);outline:none" onchange="filterEventsAll()">
+      </div>
+    </div>
+
     <!-- Filtres catégories -->
     <div class="events-filters" id="ep-cat-filters">
       <button class="ef-btn active" onclick="filterEventsCat(this,'all')">Tout</button>
@@ -994,7 +1034,8 @@ body {
       <button class="ef-btn" onclick="filterEventsAge(this,'12+')">👦 12+ ans</button>
     </div>
 
-    <div id="events-page-list" style="margin-top:8px"></div>
+    <div id="ep-result-count" style="font-size:11px;color:var(--muted);padding:0 0 8px;font-weight:500"></div>
+    <div id="events-page-list" style="margin-top:0"></div>
   </div>
 
 </div>
@@ -1014,13 +1055,13 @@ body {
     </div>
     <!-- Filtres catégories -->
     <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px">
-      <button class="filter-btn active" data-cat="all" onclick="filterFsMap(this,'all')">Tout</button>
-      <button class="filter-btn" data-cat="jeux_ext" onclick="filterFsMap(this,'jeux_ext')">🌳 Jeux ext.</button>
-      <button class="filter-btn" data-cat="jeux_int" onclick="filterFsMap(this,'jeux_int')">🎲 Jeux int.</button>
-      <button class="filter-btn" data-cat="culture" onclick="filterFsMap(this,'culture')">🎭 Culture</button>
-      <button class="filter-btn" data-cat="apero" onclick="filterFsMap(this,'apero')">🍷 Apéro</button>
-      <button class="filter-btn" data-cat="resto" onclick="filterFsMap(this,'resto')">🍕 Resto</button>
-      <button class="filter-btn" data-cat="eau" onclick="filterFsMap(this,'eau')">🌊 Eau</button>
+      <button class="filter-btn-map active" data-cat="all" onclick="filterFsMap(this,'all')">Tout</button>
+      <button class="filter-btn-map" data-cat="jeux_ext" onclick="filterFsMap(this,'jeux_ext')">🌳 Jeux ext.</button>
+      <button class="filter-btn-map" data-cat="jeux_int" onclick="filterFsMap(this,'jeux_int')">🎲 Jeux int.</button>
+      <button class="filter-btn-map" data-cat="culture" onclick="filterFsMap(this,'culture')">🎭 Culture</button>
+      <button class="filter-btn-map" data-cat="apero" onclick="filterFsMap(this,'apero')">🍷 Apéro</button>
+      <button class="filter-btn-map" data-cat="resto" onclick="filterFsMap(this,'resto')">🍕 Resto</button>
+      <button class="filter-btn-map" data-cat="eau" onclick="filterFsMap(this,'eau')">🌊 Eau</button>
     </div>
   </div>
   <div id="map-fullscreen" style="width:100%;height:100%"></div>
@@ -1606,13 +1647,14 @@ window.onGoogleReady = function() { console.log('Google Places pret'); };
 let allEvents = [];
 let evPageCat = 'all';
 let evPageAge = 'all';
+let evPagePeriod = 'all';
 
 async function loadEventsFromSupabase() {
   try {
     const today = new Date().toISOString().split('T')[0];
     // On récupère tout ce qui n'est pas clairement passé
     // Le filtrage fin est fait côté JS pour gérer date_fin correctement
-    const data = await supaFetch(`evenements?valide=eq.true&order=date_debut.asc&select=*&limit=200`);
+    const data = await supaFetch(`evenements?valide=eq.true&order=coup_de_coeur.desc.nullslast,date_debut.asc&select=*&limit=200`);
     if (data && data.length > 0) {
       // Filtre : garder uniquement les événements pas encore terminés
       const actifs = data.filter(evt => {
@@ -1668,6 +1710,7 @@ function renderHomeEvents(events) {
         <div class="event-name">${evt.nom}</div>
         <div class="event-sub">${addr}${heure ? ' · ' + heure : ''}</div>
         <div class="event-tags">
+          ${evt.coup_de_coeur ? '<span class="etag" style="background:#FDF3E7;color:#854F0B">💛 À ne pas rater</span>' : ''}
           <span class="etag">${cat.emoji} ${cat.label}</span>
           ${tarif ? `<span class="etag">${tarif}</span>` : ''}
           ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
@@ -1678,20 +1721,14 @@ function renderHomeEvents(events) {
 }
 
 // Affichage page événements — cartes avec image
-function renderEventsPage() {
+function renderEventsPage(filtered) {
   const container = document.getElementById('events-page-list');
   if (!container) return;
 
-  let filtered = allEvents;
-  if (evPageCat !== 'all') filtered = filtered.filter(e => e.categorie === evPageCat);
-  if (evPageAge !== 'all') {
-    const [min, max] = evPageAge === '12+' ? [12, 99] : evPageAge.split('-').map(Number);
-    filtered = filtered.filter(e => {
-      if (e.age_min === null && e.age_max === null) return true;
-      const eMin = e.age_min ?? 0;
-      const eMax = e.age_max ?? 99;
-      return eMin <= (max ?? 99) && eMax >= min;
-    });
+  // Si appelée sans argument (ex: au chargement), appliquer les filtres
+  if (!filtered) {
+    filterEventsAll();
+    return;
   }
 
   if (!filtered.length) {
@@ -1747,13 +1784,103 @@ function filterEventsCat(btn, cat) {
   document.querySelectorAll('#ep-cat-filters .ef-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   evPageCat = cat;
-  renderEventsPage();
+  filterEventsAll();
 }
 function filterEventsAge(btn, age) {
   document.querySelectorAll('#ep-age-filters .ef-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   evPageAge = age;
-  renderEventsPage();
+  filterEventsAll();
+}
+function filterEventsPeriod(btn, period) {
+  document.querySelectorAll('#ep-date-filters .ef-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  evPagePeriod = period;
+  // Réinitialiser les champs date perso si on clique sur un preset
+  if (period !== 'custom') {
+    const df = document.getElementById('ep-date-from');
+    const dt = document.getElementById('ep-date-to');
+    if (df) df.value = '';
+    if (dt) dt.value = '';
+  }
+  filterEventsAll();
+}
+function filterEventsAll() {
+  const q = (document.getElementById('ep-search')?.value || '').toLowerCase().trim();
+  const dateFrom = document.getElementById('ep-date-from')?.value;
+  const dateTo = document.getElementById('ep-date-to')?.value;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let filtered = allEvents;
+
+  // Filtre recherche
+  if (q) {
+    filtered = filtered.filter(e =>
+      (e.nom || '').toLowerCase().includes(q) ||
+      (e.adresse || '').toLowerCase().includes(q) ||
+      (e.description || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Filtre catégorie
+  if (evPageCat !== 'all') filtered = filtered.filter(e => e.categorie === evPageCat);
+
+  // Filtre âge
+  if (evPageAge !== 'all') {
+    const [min, max] = evPageAge === '12+' ? [12, 99] : evPageAge.split('-').map(Number);
+    filtered = filtered.filter(e => {
+      if (e.age_min === null && e.age_max === null) return true;
+      const eMin = e.age_min ?? 0;
+      const eMax = e.age_max ?? 99;
+      return eMin <= (max ?? 99) && eMax >= min;
+    });
+  }
+
+  // Filtre période (preset ou custom)
+  const hasCustomDate = dateFrom || dateTo;
+  if (hasCustomDate) {
+    // Date personnalisée : désactiver les presets
+    document.querySelectorAll('#ep-date-filters .ef-btn').forEach(b => b.classList.remove('active'));
+    evPagePeriod = 'custom';
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter(e => {
+        const d = e.date_debut ? new Date(e.date_debut + 'T12:00:00') : null;
+        if (!d) return true;
+        if (dateFrom && d < new Date(dateFrom)) return false;
+        if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+        return true;
+      });
+    }
+  } else if (evPagePeriod !== 'all') {
+    const now = new Date(); now.setHours(0,0,0,0);
+    const endOfDay = new Date(now); endOfDay.setHours(23,59,59);
+    const endOfWeek = new Date(now); endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
+    const nextSun = new Date(now); nextSun.setDate(now.getDate() + (7 - now.getDay()));
+    const nextSat = new Date(now); nextSat.setDate(now.getDate() + (6 - now.getDay()));
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    filtered = filtered.filter(e => {
+      const d = e.date_debut ? new Date(e.date_debut + 'T12:00:00') : null;
+      const df = e.date_fin ? new Date(e.date_fin + 'T23:59:59') : d;
+      if (!d) return false;
+      const evEnd = df || d;
+      if (evPagePeriod === 'today') return d <= endOfDay && evEnd >= now;
+      if (evPagePeriod === 'week') return d <= endOfWeek && evEnd >= now;
+      if (evPagePeriod === 'weekend') {
+        const sat = new Date(now); sat.setDate(now.getDate() + (6 - now.getDay()));
+        const sun = new Date(sat); sun.setDate(sat.getDate() + 1); sun.setHours(23,59,59);
+        return d <= sun && evEnd >= sat;
+      }
+      if (evPagePeriod === 'month') return d <= endOfMonth && evEnd >= now;
+      return true;
+    });
+  }
+
+  // Afficher le compteur
+  const countEl = document.getElementById('ep-result-count');
+  if (countEl) countEl.textContent = filtered.length ? `${filtered.length} évènement${filtered.length > 1 ? 's' : ''}` : '';
+
+  renderEventsPage(filtered);
 }
 
 // Fiche événement enrichie
@@ -2882,7 +3009,7 @@ let fsMarkers = [];
 let fsCat = 'all';
 
 function filterFsMap(btn, cat) {
-  document.querySelectorAll('#map-fs-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#map-fs-filters .filter-btn-map').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   fsCat = cat;
   updateFsMarkers();

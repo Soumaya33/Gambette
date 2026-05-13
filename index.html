@@ -867,7 +867,7 @@ body {
   </div>
 
   <!-- Recherche lieux accueil -->
-  <div style="position:relative;margin-bottom:14px">
+  <div style="position:relative;margin-bottom:14px;z-index:10">
     <input id="home-search-input" type="text" placeholder="🔍 Rechercher un lieu…"
       style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:var(--white)"
       oninput="searchHomePlaces(this.value)" autocomplete="off">
@@ -1010,15 +1010,14 @@ body {
 
 <!-- PAGE CARTE PLEIN ÉCRAN -->
 <div id="map-fullscreen-page">
-  <!-- Barre recherche carte plein écran -->
-  <div style="position:absolute;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,.97);padding:10px 12px 0 12px;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <!-- Barre de recherche + filtres carte plein écran -->
+  <div style="position:absolute;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,.97);padding:10px 12px 0;box-shadow:0 2px 8px rgba(0,0,0,.08)">
     <div style="position:relative;margin-bottom:8px">
       <input id="fs-search-input" type="text" placeholder="🔍 Rechercher un lieu…"
         style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;background:var(--cream)"
         oninput="searchFsMap(this.value)" autocomplete="off">
-      <div id="fs-search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border-radius:12px;box-shadow:0 8px 24px rgba(28,28,26,.12);overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto;z-index:100"></div>
+      <div id="fs-search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border-radius:12px;box-shadow:0 8px 24px rgba(28,28,26,.12);overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto;z-index:1001"></div>
     </div>
-    <!-- Filtres catégories -->
     <div id="map-fs-filters" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px">
       <button class="filter-btn active" data-cat="all" onclick="filterFsMap(this,'all')">Tout</button>
       <button class="filter-btn" data-cat="jeux_ext" onclick="filterFsMap(this,'jeux_ext')">🌳 Jeux ext.</button>
@@ -1029,7 +1028,7 @@ body {
       <button class="filter-btn" data-cat="eau" onclick="filterFsMap(this,'eau')">🌊 Eau</button>
     </div>
   </div>
-  <div id="map-fullscreen" style="width:100%;height:100%;margin-top:0"></div>
+  <div id="map-fullscreen" style="width:100%;height:100%"></div>
 </div>
 
 <!-- NAV -->
@@ -1684,21 +1683,67 @@ function renderHomeEvents(events) {
 }
 
 // Affichage page événements — cartes avec image
-// Filtres page événements
-function filterEventsCat(btn, cat) {
-  document.querySelectorAll('#ep-cat-filters .ef-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  evPageCat = cat;
-  renderEventsPageFiltered();
+function renderEventsPage() {
+  const container = document.getElementById('events-page-list');
+  if (!container) return;
+  let filtered = allEvents;
+  if (evPageCat !== 'all') filtered = filtered.filter(e => e.categorie === evPageCat);
+  if (evPageAge !== 'all') {
+    const [min, max] = evPageAge === '12+' ? [12, 99] : evPageAge.split('-').map(Number);
+    filtered = filtered.filter(e => {
+      if (e.age_min === null && e.age_max === null) return true;
+      const eMin = e.age_min ?? 0; const eMax = e.age_max ?? 99;
+      return eMin <= (max ?? 99) && eMax >= min;
+    });
+  }
+  if (eventsSearchQuery) {
+    filtered = filtered.filter(e =>
+      e.nom.toLowerCase().includes(eventsSearchQuery) ||
+      (e.adresse||'').toLowerCase().includes(eventsSearchQuery)
+    );
+  }
+  if (!filtered.length) {
+    container.innerHTML = `<div class="loading-card"><div style="font-size:28px">🔍</div><div class="loading-text">Aucun évènement trouvé</div></div>`;
+    return;
+  }
+  container.innerHTML = filtered.map(evt => {
+    const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
+    const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
+    const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
+    const heure = evt.heure || '';
+    const tarif = evt.tarif || '';
+    const hasImg = evt.image_url && evt.image_url.startsWith('http');
+    const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
+    const uid = 'ev_' + Math.random().toString(36).slice(2,8);
+    return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
+      ${hasImg
+        ? `<div style="height:160px;overflow:hidden;border-radius:12px 12px 0 0;background:var(--cream2)">
+             <img src="${evt.image_url}" alt="${evt.nom}" style="width:100%;height:160px;object-fit:cover;display:block"
+               onerror="this.parentNode.style.display='none';document.getElementById('ph_${uid}').style.display='flex'">
+           </div>
+           <div id="ph_${uid}" class="event-img-placeholder" style="background:${cat.textColor}22;display:none">${cat.emoji}</div>`
+        : `<div class="event-img-placeholder" style="background:${cat.textColor}22">${cat.emoji}</div>`
+      }
+      <div class="event-card-body">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div class="event-date" style="flex-shrink:0">
+            <div class="event-day">${d ? d.getDate() : '?'}</div>
+            <div class="event-month">${d ? MOIS[d.getMonth()] : ''}</div>
+          </div>
+          <div style="flex:1">
+            <div class="event-card-title">${evt.nom}</div>
+            <div class="event-card-meta">${addr ? '📍 ' + addr : ''}${heure ? ' · 🕐 ' + heure : ''}</div>
+            <div class="event-tags">
+              <span class="etag">${cat.emoji} ${cat.label}</span>
+              ${tarif ? `<span class="etag">${tarif}</span>` : ''}
+              ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
-function filterEventsAge(btn, age) {
-  document.querySelectorAll('#ep-age-filters .ef-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  evPageAge = age;
-  renderEventsPageFiltered();
-}
-
-function renderEventsPage() { renderEventsPageFiltered(); }
 
 // Fiche événement enrichie
 function openEventDetail(evtJson) {
@@ -2041,6 +2086,30 @@ function checkAdminPassword() {
     document.getElementById('admin-pw-error').style.display = 'block';
     document.getElementById('admin-password').value = '';
   }
+}
+
+function showAdminList() {
+  document.getElementById('admin-edit-view').style.display = 'none';
+  document.getElementById('admin-list-view').style.display = 'block';
+
+  const container = document.getElementById('admin-places-list');
+  const places = [
+    ...allPlaces,
+    { name:'Parc Bordelais', cat:'jeux_ext', addr:'Rue du Bocage' },
+    { name:'Cap Sciences', cat:'culture', addr:'Hangar 20' },
+    { name:'Darwin Ecosystème', cat:'apero', addr:'Bastide' },
+    { name:'Le Milk', cat:'resto', addr:'Rue du Palais Gallien' },
+  ].filter((p, i, arr) => arr.findIndex(x => x.name === p.name) === i);
+
+  container.innerHTML = places.map(p => {
+    const id = p.name.toLowerCase().replace(/\s+/g,'-');
+    const override = placeOverrides[id];
+    const cat = CATEGORIES[p.cat] || CATEGORIES.jeux_ext;
+    return `<div class="admin-place-item" onclick="openAdminEdit('${escStr(p.name)}','${id}')">
+      <div class="admin-place-name">${cat.emoji} ${p.name}</div>
+      <div class="admin-place-desc">${override?.desc || 'Aucune description personnalisée — cliquer pour ajouter'}</div>
+    </div>`;
+  }).join('');
 }
 
 function openAdminEdit(name, id) {
@@ -2757,9 +2826,11 @@ function setNav(tab) {
   if (filtersEl) filtersEl.style.display = (tab === 'events' || tab === 'favs') ? 'none' : '';
 
   if (tab === 'map') {
+    // Masquer complètement la mini carte
+    const mc = document.getElementById('map-container');
+    if (mc) { mc.style.display='none'; mc.style.visibility='hidden'; mc.style.zIndex='-1'; }
     // Afficher la carte plein écran
     mapPage.style.display = 'flex';
-    // Initialiser ou rafraîchir la carte plein écran
     initFullscreenMap();
   } else if (tab === 'favs') {
     Array.from(body.children).forEach(el => {
@@ -2775,7 +2846,9 @@ function setNav(tab) {
     renderEventsPage();
     logAction('view_events_page');
   } else {
-    // Home
+    // Home — restaurer la mini carte
+    const mc = document.getElementById('map-container');
+    if (mc) { mc.style.display=''; mc.style.visibility=''; mc.style.zIndex=''; }
     Array.from(body.children).forEach(el => {
       if (el.id === 'map-fullscreen-page') return;
       if (el.id === 'favs-section' || el.id === 'events-page') {
@@ -2919,9 +2992,7 @@ function searchFsMap(val) {
 function selectFsPlace(name, cat, addr, rating, lat, lng) {
   document.getElementById('fs-search-input').value = '';
   document.getElementById('fs-search-results').style.display = 'none';
-  if (fullscreenMap && lat && lng) {
-    fullscreenMap.setView([lat, lng], 16);
-  }
+  if (fullscreenMap && lat && lng) fullscreenMap.setView([lat, lng], 16);
   showPlaceDetail(name, cat, addr, rating);
 }
 
@@ -2929,177 +3000,10 @@ function selectFsPlace(name, cat, addr, rating, lat, lng) {
 let eventsSearchQuery = '';
 function searchEvents(val) {
   eventsSearchQuery = val.toLowerCase();
-  renderEventsPageFiltered();
+  renderEventsPage();
 }
 
-function renderEventsPageFiltered() {
-  const container = document.getElementById('events-page-list');
-  if (!container) return;
-  let filtered = allEvents;
-  if (evPageCat !== 'all') filtered = filtered.filter(e => e.categorie === evPageCat);
-  if (evPageAge !== 'all') {
-    const [min, max] = evPageAge === '12+' ? [12, 99] : evPageAge.split('-').map(Number);
-    filtered = filtered.filter(e => {
-      if (e.age_min === null && e.age_max === null) return true;
-      const eMin = e.age_min ?? 0;
-      const eMax = e.age_max ?? 99;
-      return eMin <= (max ?? 99) && eMax >= min;
-    });
-  }
-  if (eventsSearchQuery) {
-    filtered = filtered.filter(e =>
-      e.nom.toLowerCase().includes(eventsSearchQuery) ||
-      (e.adresse||'').toLowerCase().includes(eventsSearchQuery) ||
-      (e.description||'').toLowerCase().includes(eventsSearchQuery)
-    );
-  }
-  if (!filtered.length) {
-    container.innerHTML = `<div class="loading-card"><div style="font-size:28px">🔍</div><div class="loading-text">Aucun évènement trouvé</div></div>`;
-    return;
-  }
-  container.innerHTML = filtered.map(evt => {
-    const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
-    const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
-    const addr = evt.adresse ? evt.adresse.split(',')[0] : 'Bordeaux';
-    const heure = evt.heure || '';
-    const tarif = evt.tarif || '';
-    const hasImg = evt.image_url && evt.image_url.startsWith('http');
-    const evtJson = encodeURIComponent(JSON.stringify(evt)).replace(/'/g, '%27');
-    const uid = 'ev_' + Math.random().toString(36).slice(2,8);
-    return `<div class="event-card-full" onclick="openEventDetail('${evtJson}')">
-      ${hasImg
-        ? `<div style="height:160px;overflow:hidden;border-radius:12px 12px 0 0;background:var(--cream2)">
-             <img src="${evt.image_url}" alt="${evt.nom}" style="width:100%;height:160px;object-fit:cover;display:block"
-               onerror="this.parentNode.style.display='none';document.getElementById('ph_${uid}').style.display='flex'">
-           </div>
-           <div id="ph_${uid}" class="event-img-placeholder" style="background:${cat.textColor}22;display:none">${cat.emoji}</div>`
-        : `<div class="event-img-placeholder" style="background:${cat.textColor}22">${cat.emoji}</div>`
-      }
-      <div class="event-card-body">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div class="event-date" style="flex-shrink:0">
-            <div class="event-day">${d ? d.getDate() : '?'}</div>
-            <div class="event-month">${d ? MOIS[d.getMonth()] : ''}</div>
-          </div>
-          <div style="flex:1">
-            <div class="event-card-title">${evt.nom}</div>
-            <div class="event-card-meta">${addr ? '📍 ' + addr : ''}${heure ? ' · 🕐 ' + heure : ''}</div>
-            <div class="event-tags">
-              <span class="etag">${cat.emoji} ${cat.label}</span>
-              ${tarif ? `<span class="etag">${tarif}</span>` : ''}
-              ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── ADMIN AMÉLIORÉ avec événements utilisateurs ──
-async function showAdminList() {
-  document.getElementById('admin-edit-view').style.display = 'none';
-  document.getElementById('admin-list-view').style.display = 'block';
-
-  // Onglets admin
-  const listView = document.getElementById('admin-list-view');
-  if (!listView.querySelector('.admin-tabs')) {
-    listView.insertAdjacentHTML('afterbegin', `
-      <div class="admin-tabs" style="display:flex;gap:8px;margin-bottom:16px">
-        <button id="tab-lieux" onclick="showAdminTab('lieux')"
-          style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--forest);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer">📍 Lieux</button>
-        <button id="tab-events" onclick="showAdminTab('events')"
-          style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--sand);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer">📅 Événements</button>
-      </div>
-      <div id="admin-lieux-content"></div>
-      <div id="admin-events-content" style="display:none"></div>
-    `);
-  }
-  showAdminTab('lieux');
-}
-
-function showAdminTab(tab) {
-  document.getElementById('tab-lieux').style.background = tab === 'lieux' ? 'var(--forest)' : 'transparent';
-  document.getElementById('tab-lieux').style.color = tab === 'lieux' ? 'white' : 'var(--muted)';
-  document.getElementById('tab-lieux').style.border = tab === 'lieux' ? 'none' : '1.5px solid var(--sand)';
-  document.getElementById('tab-events').style.background = tab === 'events' ? 'var(--forest)' : 'transparent';
-  document.getElementById('tab-events').style.color = tab === 'events' ? 'white' : 'var(--muted)';
-  document.getElementById('tab-events').style.border = tab === 'events' ? 'none' : '1.5px solid var(--sand)';
-
-  document.getElementById('admin-lieux-content').style.display = tab === 'lieux' ? 'block' : 'none';
-  document.getElementById('admin-events-content').style.display = tab === 'events' ? 'block' : 'none';
-
-  if (tab === 'lieux') renderAdminLieux();
-  if (tab === 'events') renderAdminEvents();
-}
-
-function renderAdminLieux() {
-  const container = document.getElementById('admin-lieux-content');
-  const places = allPlaces.slice(0, 30);
-  container.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:14px">Lieux publiés — cliquer pour modifier</div>` +
-    places.map(p => {
-      const id = p.name.toLowerCase().replace(/\s+/g,'-');
-      const cat = CATEGORIES[Array.isArray(p.cat) ? p.cat[0] : p.cat] || CATEGORIES.jeux_ext;
-      return `<div class="admin-place-item" onclick="openAdminEdit('${escStr(p.name)}','${id}')">
-        <div class="admin-place-name">${cat.emoji} ${p.name}</div>
-        <div class="admin-place-desc">${p.description || 'Aucune description — cliquer pour ajouter'}</div>
-      </div>`;
-    }).join('');
-}
-
-async function renderAdminEvents() {
-  const container = document.getElementById('admin-events-content');
-  container.innerHTML = `<div class="loading-card"><div class="loading-spinner"></div><div class="loading-text">Chargement…</div></div>`;
-  try {
-    const data = await supaFetch('evenements?valide=eq.false&rejete=eq.false&order=created_at.desc&select=*&limit=50');
-    if (!data || !data.length) {
-      container.innerHTML = `<div style="text-align:center;padding:30px;font-size:13px;color:var(--muted)">✅ Aucun événement en attente</div>`;
-      return;
-    }
-    container.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:14px">${data.length} événement(s) en attente de validation</div>` +
-      data.map(evt => {
-        const cat = CATEGORIES[evt.categorie] || CATEGORIES.culture;
-        const d = evt.date_debut ? new Date(evt.date_debut + 'T12:00:00') : null;
-        return `<div class="admin-place-item" style="border-left:3px solid var(--gold)">
-          <div class="admin-place-name">${cat.emoji} ${evt.nom}</div>
-          <div class="admin-place-desc" style="margin-bottom:8px">${d ? d.toLocaleDateString('fr-FR') : 'Sans date'}${evt.adresse ? ' · ' + evt.adresse.split(',')[0] : ''}${evt.lien_reservation ? ' · 🔗 Lien fourni' : ''}</div>
-          <div style="display:flex;gap:8px">
-            <button onclick="adminValidateEvent(${evt.id},this)"
-              style="flex:1;padding:7px;border-radius:8px;border:none;background:var(--forest);color:white;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">✅ Publier</button>
-            <button onclick="adminRejectEvent(${evt.id},this)"
-              style="flex:1;padding:7px;border-radius:8px;border:none;background:#FBE9E7;color:var(--terracotta);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">❌ Rejeter</button>
-          </div>
-        </div>`;
-      }).join('');
-  } catch(e) {
-    container.innerHTML = `<div style="color:var(--terracotta);padding:16px;font-size:13px">Erreur de chargement</div>`;
-  }
-}
-
-async function adminValidateEvent(id, btn) {
-  try {
-    await fetch(SUPABASE_URL + '/rest/v1/evenements?id=eq.' + id, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ valide: true }),
-    });
-    btn.closest('.admin-place-item').style.opacity = '0.4';
-    btn.textContent = '✅ Publié';
-  } catch(e) { btn.textContent = '❌ Erreur'; }
-}
-
-async function adminRejectEvent(id, btn) {
-  try {
-    await fetch(SUPABASE_URL + '/rest/v1/evenements?id=eq.' + id, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ rejete: true }),
-    });
-    btn.closest('.admin-place-item').style.opacity = '0.4';
-    btn.textContent = '❌ Rejeté';
-  } catch(e) { btn.textContent = '❌ Erreur'; }
-}
-
+// ── TOAST ──
 function showToast(msg) {
   const t = document.createElement('div');
   t.textContent = msg;

@@ -840,10 +840,7 @@ body {
 <div id="header">
   <div class="header-top">
     <div class="logo">Vad<em>rou</em></div>
-    <div class="header-actions">
-      <div class="btn-icon" onclick="openAddModal()">＋</div>
-      <div class="btn-icon" onclick="openAdmin()">👤</div>
-    </div>
+
   </div>
   <div class="header-city" id="header-city">📍 Bordeaux Métropole</div>
   <div class="header-title">Où sortir <strong>avec les enfants ?</strong></div>
@@ -1038,10 +1035,14 @@ body {
     <div id="events-page-list" style="margin-top:0"></div>
   </div>
 
+  <!-- CONTACT -->
+  <div style="text-align:center;padding:12px 16px 4px;font-size:11px;font-weight:300;color:var(--muted);line-height:1.7">
+    Vous avez une suggestion, un avis, ou vous êtes un professionnel et vous souhaitez nous contacter ? On est à <a href="mailto:contact@vadrou.com" style="color:var(--terracotta);text-decoration:none;font-weight:500">contact@vadrou.com</a>
+  </div>
+
 </div>
 
-<!-- FAB -->
-<button id="fab" onclick="openChoiceModal()">＋</button>
+
 
 <!-- PAGE CARTE PLEIN ÉCRAN -->
 <div id="map-fullscreen-page">
@@ -1654,7 +1655,7 @@ async function loadEventsFromSupabase() {
     const today = new Date().toISOString().split('T')[0];
     // On récupère tout ce qui n'est pas clairement passé
     // Le filtrage fin est fait côté JS pour gérer date_fin correctement
-    const data = await supaFetch(`evenements?valide=eq.true&order=coup_de_coeur.desc.nullslast,date_debut.asc&select=*&limit=200`);
+    const data = await supaFetch(`evenements?valide=eq.true&order=date_debut.asc&select=*&limit=200`);
     if (data && data.length > 0) {
       // Filtre : garder uniquement les événements pas encore terminés
       const actifs = data.filter(evt => {
@@ -1674,7 +1675,7 @@ async function loadEventsFromSupabase() {
       });
 
       allEvents = actifs;
-      renderHomeEvents(actifs.slice(0, 5));
+      renderHomeEvents(actifs.filter(e => e.coup_de_coeur).slice(0, 5));
       renderEventsPage();
     }
   } catch(e) {
@@ -1710,7 +1711,6 @@ function renderHomeEvents(events) {
         <div class="event-name">${evt.nom}</div>
         <div class="event-sub">${addr}${heure ? ' · ' + heure : ''}</div>
         <div class="event-tags">
-          ${evt.coup_de_coeur ? '<span class="etag" style="background:#FDF3E7;color:#854F0B">💛 À ne pas rater</span>' : ''}
           <span class="etag">${cat.emoji} ${cat.label}</span>
           ${tarif ? `<span class="etag">${tarif}</span>` : ''}
           ${evt.age_min !== null && evt.age_min !== undefined ? `<span class="etag">Dès ${evt.age_min} ans</span>` : ''}

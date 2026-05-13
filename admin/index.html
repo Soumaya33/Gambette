@@ -278,7 +278,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="suggestions" id="geo-suggestions"></div>
         <div class="field">
           <label>Adresse complète</label>
-          <input type="text" id="f-adresse" placeholder="Adresse…">
+          <input type="text" id="f-adresse" oninput="debounceSavePlace()" placeholder="Adresse…">
         </div>
         <div class="grid2">
           <div class="field" style="margin-bottom:0">
@@ -297,15 +297,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="section-title">✏️ Informations</div>
         <div class="field">
           <label>Nom</label>
-          <input type="text" id="f-nom" placeholder="Nom du lieu">
+          <input type="text" id="f-nom" oninput="debounceSavePlace()" placeholder="Nom du lieu">
         </div>
         <div class="field">
           <label>Label éditorial (ex : "Incontournable")</label>
-          <input type="text" id="f-label" placeholder="Le choix de la rédac'…">
+          <input type="text" id="f-label" oninput="debounceSavePlace()" placeholder="Le choix de la rédac'…">
         </div>
         <div class="field">
           <label>Description</label>
-          <textarea id="f-desc" rows="3" placeholder="Description affichée dans la fiche lieu…"></textarea>
+          <textarea id="f-desc" oninput="debounceSavePlace()" rows="3" placeholder="Description affichée dans la fiche lieu…"></textarea>
         </div>
       </div>
 
@@ -328,11 +328,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="grid2">
           <div class="field" style="margin-bottom:0">
             <label>Âges (ex : "Dès 3 ans")</label>
-            <input type="text" id="f-ages" placeholder="Tout âge…">
+            <input type="text" id="f-ages" oninput="debounceSavePlace()" placeholder="Tout âge…">
           </div>
           <div class="field" style="margin-bottom:0">
             <label>Tarif</label>
-            <input type="text" id="f-tarif" placeholder="Gratuit, 5€…">
+            <input type="text" id="f-tarif" oninput="debounceSavePlace()" placeholder="Gratuit, 5€…">
           </div>
         </div>
       </div>
@@ -355,7 +355,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         </div>
         <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
           <label style="font-size:11px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);white-space:nowrap">Ordre d'affichage</label>
-          <input type="number" id="f-crush-order" min="1" max="20" placeholder="1, 2, 3…"
+          <input type="number" id="f-crush-order" oninput="debounceSavePlace()" min="1" max="20" placeholder="1, 2, 3…"
             style="width:80px;padding:7px 10px;border:1.5px solid var(--sand);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--cream);outline:none">
           <span style="font-size:11px;color:var(--muted)">1 = affiché en premier</span>
         </div>
@@ -368,7 +368,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
       <button class="btn btn-skip mobile-only" onclick="closeMobileEditor()" title="Retour à la liste" style="font-size:18px;padding:10px 12px">←</button>
       <button class="btn btn-delete" onclick="deletePlace()">🗑️</button>
       <button class="btn btn-skip" onclick="nextPlace()">Suivant →</button>
-      <button class="btn btn-save" onclick="savePlace()">💾 Enregistrer</button>
+      <span id="save-indicator-lieu" style="font-size:11px;font-weight:500;flex:1;text-align:right;align-self:center;transition:color .2s"></span>
+      <button class="btn btn-save" onclick="savePlace()">💾</button>
     </div>
   </div>
 </div>
@@ -434,21 +435,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="section-title">✏️ Informations principales</div>
         <div class="field">
           <label>Nom de l'évènement</label>
-          <input type="text" id="ef-nom" placeholder="Nom…">
+          <input type="text" id="ef-nom" oninput="debounceSaveEvent()" placeholder="Nom…">
         </div>
         <div class="grid2">
           <div class="field">
             <label>Date de début</label>
-            <input type="date" id="ef-date-debut">
+            <input type="date" id="ef-date-debut" onchange="debounceSaveEvent()">
           </div>
           <div class="field">
             <label>Date de fin</label>
-            <input type="date" id="ef-date-fin">
+            <input type="date" id="ef-date-fin" onchange="debounceSaveEvent()">
           </div>
         </div>
         <div class="field">
           <label>Heure</label>
-          <input type="text" id="ef-heure" placeholder="Ex : 10h–12h, dès 14h…">
+          <input type="text" id="ef-heure" oninput="debounceSaveEvent()" placeholder="Ex : 10h–12h, dès 14h…">
         </div>
       </div>
 
@@ -457,7 +458,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="section-title">📍 Lieu</div>
         <div class="field">
           <label>Adresse</label>
-          <input type="text" id="ef-adresse" placeholder="Adresse de l'évènement…">
+          <input type="text" id="ef-adresse" oninput="debounceSaveEvent()" placeholder="Adresse de l'évènement…">
         </div>
         <div class="grid2">
           <div class="field" style="margin-bottom:0">
@@ -476,7 +477,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="section-title">🏷️ Catégorie & détails</div>
         <div class="field">
           <label>Catégorie</label>
-          <select id="ef-cat" style="width:100%;padding:8px 12px;border:1.5px solid var(--sand);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--cream);outline:none">
+          <select id="ef-cat" onchange="debounceSaveEvent()" style="width:100%;padding:8px 12px;border:1.5px solid var(--sand);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--cream);outline:none">
             <option value="musique">🎵 Musique & concerts</option>
             <option value="theatre">🎭 Théâtre & spectacle</option>
             <option value="sport">⚽ Sport & outdoor</option>
@@ -491,16 +492,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="grid2">
           <div class="field">
             <label>Âge minimum</label>
-            <input type="number" id="ef-age-min" placeholder="Ex : 3">
+            <input type="number" id="ef-age-min" oninput="debounceSaveEvent()" placeholder="Ex : 3">
           </div>
           <div class="field">
             <label>Âge maximum</label>
-            <input type="number" id="ef-age-max" placeholder="Ex : 12">
+            <input type="number" id="ef-age-max" oninput="debounceSaveEvent()" placeholder="Ex : 12">
           </div>
         </div>
         <div class="field">
           <label>Tarif</label>
-          <input type="text" id="ef-tarif" placeholder="Gratuit, 5€/enfant…">
+          <input type="text" id="ef-tarif" oninput="debounceSaveEvent()" placeholder="Gratuit, 5€/enfant…">
         </div>
       </div>
 
@@ -509,7 +510,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="section-title">📝 Description & médias</div>
         <div class="field">
           <label>Description</label>
-          <textarea id="ef-desc" rows="4" placeholder="Description de l'évènement…"></textarea>
+          <textarea id="ef-desc" oninput="debounceSaveEvent()" rows="4" placeholder="Description de l'évènement…"></textarea>
         </div>
         <div class="field">
           <label>Image (URL)</label>
@@ -520,7 +521,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         </div>
         <div class="field">
           <label>Lien réservation / infos</label>
-          <input type="url" id="ef-lien" placeholder="https://…">
+          <input type="url" id="ef-lien" oninput="debounceSaveEvent()" placeholder="https://…">
         </div>
       </div>
 
@@ -540,7 +541,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
       <button class="btn btn-delete" onclick="deleteEvent()">🗑️</button>
       <button class="btn btn-skip" onclick="duplicateEvent()" title="Dupliquer">⧉</button>
       <button class="btn btn-skip" onclick="nextEvent()">Suivant →</button>
-      <button class="btn btn-save" onclick="saveEvent()">💾 Enregistrer</button>
+      <span id="save-indicator-event" style="font-size:11px;font-weight:500;flex:1;text-align:right;align-self:center;transition:color .2s"></span>
+      <button class="btn btn-save" onclick="saveEvent()">💾</button>
     </div>
   </div>
 
@@ -1648,6 +1650,44 @@ function nextEvent() {
   const next = filteredEvents[idx+1];
   if (next) selectEvent(next.id);
   else showToast('Dernier évènement de la liste !');
+}
+
+// ── AUTO-SAVE ──
+let _savePlaceTimer = null;
+let _saveEventTimer = null;
+
+function debounceSavePlace() {
+  if (!currentId) return;
+  clearTimeout(_savePlaceTimer);
+  showSaveIndicator('lieu', 'typing');
+  _savePlaceTimer = setTimeout(async () => {
+    await savePlace();
+    showSaveIndicator('lieu', 'saved');
+  }, 900);
+}
+
+function debounceSaveEvent() {
+  if (!currentEvId) return;
+  clearTimeout(_saveEventTimer);
+  showSaveIndicator('event', 'typing');
+  _saveEventTimer = setTimeout(async () => {
+    await saveEvent();
+    showSaveIndicator('event', 'saved');
+  }, 900);
+}
+
+function showSaveIndicator(type, state) {
+  const id = type === 'lieu' ? 'save-indicator-lieu' : 'save-indicator-event';
+  let el = document.getElementById(id);
+  if (!el) return;
+  if (state === 'typing') {
+    el.textContent = '⏳ Enregistrement…';
+    el.style.color = 'var(--muted)';
+  } else {
+    el.textContent = '✅ Enregistré';
+    el.style.color = 'var(--ok)';
+    setTimeout(() => { el.textContent = ''; }, 2000);
+  }
 }
 
 // ── MOBILE NAVIGATION ──

@@ -1475,7 +1475,7 @@ async function supaFetch(path, opts) {
     body: opts.body || undefined,
   });
   if (!res.ok) throw new Error(await res.text());
-  if (opts.method === 'POST') return res;
+  if (opts.method === 'POST' || opts.method === 'DELETE' || opts.method === 'PATCH') return res;
   const txt = await res.text();
   return txt ? JSON.parse(txt) : [];
 }
@@ -1504,6 +1504,11 @@ let leafletMap = null, leafletMarkers = [], allPlaces = [];
 let currentCat = 'all', currentMoment = 'all', currentAge = 'all';
 
 function startApp() {
+  // Initialiser le device ID persistant dès le démarrage
+  getOrCreateDeviceId().then(id => {
+    ANALYTICS_USER_ID = id;
+    loadFavoritesFromSupabase(); // Charger les favoris après avoir le device ID
+  });
   setTimeout(function() {
     document.getElementById('splash').classList.add('out');
     setTimeout(function() { document.getElementById('splash').style.display='none'; }, 600);
@@ -2002,18 +2007,30 @@ function renderPlaceCards(places) {
 function escStr(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
 function truncate(s, n) { return s && s.length > n ? s.slice(0,n)+'…' : (s||''); }
 
-// ── ANALYTICS ──
-// Génère ou récupère un UUID anonyme persistant par appareil
-function getAnonymousUserId() {
-  let uid = localStorage.getItem('gambette_uid');
+// ── DEVICE ID PERSISTANT (Capacitor Preferences) ──
+// Génère un UUID unique par appareil, persistant entre les sessions
+let ANALYTICS_USER_ID = null;
+
+async function getOrCreateDeviceId() {
+  try {
+    // Essai avec Capacitor Preferences (persistant sur Android)
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      const { Preferences } = await import('@capacitor/preferences');
+      const { value } = await Preferences.get({ key: 'vadrou_device_id' });
+      if (value) return value;
+      const newId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+      await Preferences.set({ key: 'vadrou_device_id', value: newId });
+      return newId;
+    }
+  } catch(e) {}
+  // Fallback web : localStorage
+  let uid = localStorage.getItem('vadrou_device_id');
   if (!uid) {
-    uid = 'uid_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
-    localStorage.setItem('gambette_uid', uid);
+    uid = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('vadrou_device_id', uid);
   }
   return uid;
 }
-
-const ANALYTICS_USER_ID = getAnonymousUserId();
 
 async function logAction(action, itemName, itemId, itemCat) {
   try {
@@ -2806,26 +2823,61 @@ function openMap() {
   setTimeout(() => leafletMap && leafletMap.invalidateSize(), 300);
 }
 
-// ── FAVORIS ──
-let favorites = JSON.parse(localStorage.getItem('gambette_favs') || '[]');
-let eventFavorites = JSON.parse(localStorage.getItem('gambette_event_favs') || '[]');
-let currentEventForFav = null; // Stocke l'événement affiché dans la modal
+// ── FAVORIS (Supabase + device_id persistant) ──
+let favorites = [];        // lieux [{lieu_id, name, cat, addr, rating}]
+let eventFavorites = [];   // événements [{nom, ...}]
+let currentEventForFav = null;
 
-function toggleFavorite() {
+// ── Chargement initial depuis Supabase ──
+async function loadFavoritesFromSupabase() {
+  if (!ANALYTICS_USER_ID) return;
+  try {
+    // Favoris lieux
+    const rows = await supaFetch(`favoris?device_id=eq.${encodeURIComponent(ANALYTICS_USER_ID)}&select=lieu_id,lieux(id,nom,categorie,adresse)`);
+    favorites = (rows || []).map(r => ({
+      lieu_id: r.lieu_id,
+      name: r.lieux?.nom || '',
+      cat: r.lieux?.categorie || 'jeux_ext',
+      addr: r.lieux?.adresse || 'Bordeaux',
+      rating: '',
+    }));
+    // Favoris événements (localStorage — pas de table dédiée pour les events)
+    const stored = localStorage.getItem('vadrou_event_favs_' + ANALYTICS_USER_ID);
+    eventFavorites = stored ? JSON.parse(stored) : [];
+    renderFavs();
+  } catch(e) {
+    // Fallback silencieux
+    favorites = [];
+    eventFavorites = [];
+  }
+}
+
+async function toggleFavorite() {
   const btn = document.getElementById('detail-fav-btn');
   const name = document.getElementById('detail-name').textContent;
+  const place = allPlaces.find(p => p.name === name);
   const idx = favorites.findIndex(f => f.name === name);
+
   if (idx >= 0) {
+    // Supprimer
+    const lieuId = favorites[idx].lieu_id;
     favorites.splice(idx, 1);
     btn.textContent = '🤍'; btn.classList.remove('active');
     logAction('remove_favorite_place', name);
+    if (ANALYTICS_USER_ID && lieuId) {
+      supaFetch(`favoris?device_id=eq.${encodeURIComponent(ANALYTICS_USER_ID)}&lieu_id=eq.${lieuId}`, { method: 'DELETE' }).catch(() => {});
+    }
   } else {
-    const place = allPlaces.find(p => p.name === name);
-    if (place) favorites.push({ name: place.name, cat: place.cat, addr: place.addr, rating: place.rating });
-    btn.textContent = '❤️'; btn.classList.add('active');
-    logAction('add_favorite_place', name, null, Array.isArray(place?.cat) ? place.cat[0] : place?.cat);
+    // Ajouter
+    if (place) {
+      favorites.push({ lieu_id: place.id, name: place.name, cat: place.cat, addr: place.addr, rating: place.rating });
+      btn.textContent = '❤️'; btn.classList.add('active');
+      logAction('add_favorite_place', name, null, Array.isArray(place?.cat) ? place.cat[0] : place?.cat);
+      if (ANALYTICS_USER_ID && place.id) {
+        supaFetch('favoris', { method: 'POST', body: JSON.stringify({ device_id: ANALYTICS_USER_ID, lieu_id: place.id }) }).catch(() => {});
+      }
+    }
   }
-  localStorage.setItem('gambette_favs', JSON.stringify(favorites));
   renderFavs();
 }
 
@@ -2843,7 +2895,9 @@ function toggleEventFavorite() {
     btn.textContent = '❤️'; btn.classList.add('active');
     logAction('add_favorite_event', nom, null, currentEventForFav.categorie);
   }
-  localStorage.setItem('gambette_event_favs', JSON.stringify(eventFavorites));
+  if (ANALYTICS_USER_ID) {
+    localStorage.setItem('vadrou_event_favs_' + ANALYTICS_USER_ID, JSON.stringify(eventFavorites));
+  }
   renderFavs();
 }
 
@@ -2931,14 +2985,19 @@ function renderFavs() {
 }
 
 function removeFav(name) {
+  const fav = favorites.find(f => f.name === name);
   favorites = favorites.filter(f => f.name !== name);
-  localStorage.setItem('gambette_favs', JSON.stringify(favorites));
+  if (ANALYTICS_USER_ID && fav?.lieu_id) {
+    supaFetch(`favoris?device_id=eq.${encodeURIComponent(ANALYTICS_USER_ID)}&lieu_id=eq.${fav.lieu_id}`, { method: 'DELETE' }).catch(() => {});
+  }
   renderFavs();
 }
 
 function removeEventFav(nom) {
   eventFavorites = eventFavorites.filter(f => f.nom !== nom);
-  localStorage.setItem('gambette_event_favs', JSON.stringify(eventFavorites));
+  if (ANALYTICS_USER_ID) {
+    localStorage.setItem('vadrou_event_favs_' + ANALYTICS_USER_ID, JSON.stringify(eventFavorites));
+  }
   renderFavs();
 }
 let currentTab = 'home';

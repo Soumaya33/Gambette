@@ -3,7 +3,7 @@ on:
   schedule:
     - cron: '0 23 * * *'  # 1h heure française (UTC+2) = 23h UTC
     - cron: '0 3 * * *'   # 5h heure française (UTC+2) = 3h UTC
-    - cron: '0 7 * * *'   # 9h heure française (UTC+2) = 7h UTC
+    - cron: '0 6 * * *'   # 8h heure française (UTC+2) = 6h UTC
     - cron: '0 12 * * *'  # 14h heure française (UTC+2) = 12h UTC
   workflow_dispatch:
 jobs:

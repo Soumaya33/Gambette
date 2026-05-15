@@ -387,6 +387,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <button class="ef-filter active" data-f="all" onclick="filterEvStatus(this,'all')">Tous</button>
         <button class="ef-filter" data-f="true" onclick="filterEvStatus(this,'true')">✅ Publiés</button>
         <button class="ef-filter" data-f="false" onclick="filterEvStatus(this,'false')">⏳ En attente</button>
+        <button class="ef-filter" data-f="crush" onclick="filterEvStatus(this,'crush')">💛 À ne pas rater</button>
         <button class="ef-filter" data-f="past" onclick="filterEvStatus(this,'past')">📦 Passés</button>
         <button class="ef-filter" data-f="rejete" onclick="filterEvStatus(this,'rejete')">🚫 Rejetés</button>
       </div>
@@ -510,7 +511,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charco
         <div class="section-title">📝 Description & médias</div>
         <div class="field">
           <label>Description</label>
-          <textarea id="ef-desc" oninput="debounceSaveEvent()" rows="4" placeholder="Description de l'évènement…"></textarea>
+          <textarea id="ef-desc" oninput="debounceSaveEvent()" rows="10" placeholder="Description de l'évènement…"></textarea>
         </div>
         <div class="field">
           <label>Image (URL)</label>
@@ -1464,6 +1465,7 @@ function applyEventFilters(q, status) {
       : status==='past'   ? (past && !rejete)
       : status==='true'   ? (e.valide && !past && !rejete)
       : status==='rejete' ? rejete
+      : status==='crush'  ? (e.coup_de_coeur && !rejete)
       : (!e.valide && !past && !rejete); // 'false' = en attente
     return matchQ && matchS;
   });

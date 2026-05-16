@@ -1652,7 +1652,60 @@ function loadGoogleForSearch() {
   s.async = true; s.defer = true;
   document.head.appendChild(s);
 }
-window.onGoogleReady = function() { console.log('Google Places pret'); };
+window.onGoogleReady = function() {
+  console.log('Google Places pret');
+  // Initialiser les Autocomplete sur les deux champs de recherche
+  initPlaceAutocomplete('place-search-input', onLieuSelected);
+  initPlaceAutocomplete('event-place-input', onEventPlaceSelected);
+};
+
+function initPlaceAutocomplete(inputId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input || !window.google) return;
+  const ac = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'fr' },
+    fields: ['name', 'formatted_address', 'geometry', 'place_id'],
+    bounds: new google.maps.LatLngBounds(
+      new google.maps.LatLng(44.5, -1.5),
+      new google.maps.LatLng(45.3, 0.0)
+    ),
+  });
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
+    if (!place.geometry) return;
+    callback(place);
+  });
+}
+
+function onLieuSelected(place) {
+  addSelectedPlace = {
+    name: place.name,
+    addr: place.formatted_address || '',
+    lat: place.geometry.location.lat(),
+    lng: place.geometry.location.lng(),
+    placeId: place.place_id,
+  };
+  document.getElementById('place-search-input').value = place.name;
+  document.getElementById('place-suggestions').style.display = 'none';
+  document.getElementById('sel-name').textContent = place.name;
+  document.getElementById('sel-addr').textContent = (place.formatted_address || '').split(',').slice(0,2).join(',');
+  document.getElementById('place-selected').style.display = 'block';
+  document.getElementById('add-step2').style.display = 'block';
+}
+
+function onEventPlaceSelected(place) {
+  eventSelectedPlace = {
+    name: place.name,
+    addr: place.formatted_address || '',
+    lat: place.geometry.location.lat(),
+    lng: place.geometry.location.lng(),
+  };
+  document.getElementById('event-place-input').value = place.name;
+  document.getElementById('event-place-suggestions').style.display = 'none';
+  document.getElementById('event-sel-name').textContent = place.name;
+  document.getElementById('event-sel-addr').textContent = (place.formatted_address || '').split(',').slice(0,2).join(',');
+  document.getElementById('event-place-selected').style.display = 'block';
+}
 
 // ── ÉVÉNEMENTS ──
 let allEvents = [];
@@ -2535,6 +2588,13 @@ function closeModalById(id) {
 function openAddModal(type) {
   resetPlaceSearch();
   const isEvent = type === 'evenement';
+  // Réinitialiser l'autocomplete après ouverture de la modal
+  setTimeout(() => {
+    if (window.google) {
+      if (!isEvent) initPlaceAutocomplete('place-search-input', onLieuSelected);
+      else initPlaceAutocomplete('event-place-input', onEventPlaceSelected);
+    }
+  }, 200);
   document.getElementById('add-modal-title').textContent = isEvent ? 'Proposer un événement' : 'Proposer un lieu';
   document.getElementById('add-modal-sub').textContent = isEvent
     ? 'Partage un événement kids-friendly à Bordeaux 🎉'
@@ -2550,33 +2610,7 @@ let eventSelectedPlace = null;
 let eventSearchDebounce = null;
 
 function searchEventPlace(val) {
-  clearTimeout(eventSearchDebounce);
-  const box = document.getElementById('event-place-suggestions');
-  if (!val || val.length < 2) { box.style.display='none'; box.innerHTML=''; return; }
-  box.innerHTML = '<div class="place-suggestion-loading">Recherche…</div>';
-  box.style.display = 'block';
-  eventSearchDebounce = setTimeout(() => {
-    if (!window.google) return;
-    const dummyEv = document.createElement('div');
-    dummyEv.style.display = 'none';
-    document.body.appendChild(dummyEv);
-    const svc = new google.maps.places.PlacesService(dummyEv);
-    svc.textSearch({ query: val + ' Bordeaux', location: new google.maps.LatLng(44.8378, -0.5792), radius: 15000 },
-      (results, status) => {
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
-          box.innerHTML = '<div class="place-suggestion-loading">Aucun résultat</div>'; return;
-        }
-        window._eventSearchResults = results;
-        box.innerHTML = results.slice(0, 5).map((p, i) => `
-          <div class="place-suggestion-item" onclick="selectEventPlace(${i})">
-            <div class="place-suggestion-icon">📍</div>
-            <div>
-              <div class="place-suggestion-name">${p.name}</div>
-              <div class="place-suggestion-addr">${(p.formatted_address||p.vicinity||'').split(',').slice(0,2).join(',')}</div>
-            </div>
-          </div>`).join('');
-      });
-  }, 350);
+  // Géré par Google Autocomplete — rien à faire ici
 }
 
 function selectEventPlace(idx) {
@@ -2667,40 +2701,7 @@ function resetPlaceSearch() {
 }
 
 function searchPlacesAutocomplete(val) {
-  clearTimeout(searchDebounce);
-  const box = document.getElementById('place-suggestions');
-  if (!val || val.length < 2) { box.style.display='none'; box.innerHTML=''; return; }
-  box.innerHTML = '<div class="place-suggestion-loading">Recherche…</div>';
-  box.style.display = 'block';
-  searchDebounce = setTimeout(() => {
-    if (!window.google) {
-      box.innerHTML = '<div class="place-suggestion-loading">Service non disponible</div>';
-      return;
-    }
-    const dummy = document.createElement('div');
-    dummy.style.display = 'none';
-    document.body.appendChild(dummy);
-    const svc = new google.maps.places.PlacesService(dummy);
-    svc.textSearch({
-      query: val + ' Bordeaux',
-      location: new google.maps.LatLng(44.8378, -0.5792),
-      radius: 15000,
-    }, (results, status) => {
-      if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
-        box.innerHTML = '<div class="place-suggestion-loading">Aucun résultat</div>';
-        return;
-      }
-      window._searchResults = results;
-      box.innerHTML = results.slice(0, 6).map((p, i) => `
-        <div class="place-suggestion-item" onclick="selectPlace(${i})">
-          <div class="place-suggestion-icon">📍</div>
-          <div>
-            <div class="place-suggestion-name">${p.name}</div>
-            <div class="place-suggestion-addr">${(p.formatted_address || p.vicinity || '').split(',').slice(0,2).join(',')}</div>
-          </div>
-        </div>`).join('');
-    });
-  }, 350);
+  // Géré par Google Autocomplete — rien à faire ici
 }
 
 function selectPlace(idx) {

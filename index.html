@@ -1068,9 +1068,6 @@ body {
   <div id="map-fullscreen" style="width:100%;height:100%"></div>
 </div>
 
-<!-- FAB -->
-<button id="fab" onclick="openChoiceModal()">＋</button>
-
 <!-- NAV -->
 <div id="nav">
   <div class="nav-item active" id="nav-home" onclick="setNav('home')">
@@ -1644,9 +1641,11 @@ function loadStaticPlaces() {
   renderPlaceCards(allPlaces);
 }
 
+const GOOGLE_SCRIPTS_KEY = 'AIzaSyDiU-kFZkJxaPDKkyar5YY73EoCuYYotOg';
+
 function loadGoogleForSearch() {
   var s = document.createElement('script');
-  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + API_KEY + '&libraries=places&callback=onGoogleReady';
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_SCRIPTS_KEY + '&libraries=places&callback=onGoogleReady';
   s.async = true; s.defer = true;
   document.head.appendChild(s);
 }
@@ -1666,22 +1665,18 @@ async function loadEventsFromSupabase() {
     const data = await supaFetch(`evenements?valide=eq.true&order=date_debut.asc&select=*&limit=200`);
     if (data && data.length > 0) {
       // Filtre : garder uniquement les événements pas encore terminés
-      // Minuit heure locale du téléphone = début du jour courant
       const actifs = data.filter(evt => {
-        const now = new Date();
-        const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         if (evt.date_fin) {
-          // Événement multi-jours : visible jusqu'à la fin du dernier jour
-          const [yf, mf, df] = evt.date_fin.split('-').map(Number);
-          const fin = new Date(yf, mf - 1, df, 23, 59, 59);
-          return fin >= todayLocal;
+          // Événement multi-jours : disparaît après le dernier jour
+          const fin = new Date(evt.date_fin + 'T23:59:59');
+          return fin >= today;
         } else if (evt.date_debut) {
-          // Sans date_fin : visible uniquement le jour J, disparaît dès minuit
-          const [yd, md, dd] = evt.date_debut.split('-').map(Number);
-          const debutLocal = new Date(yd, md - 1, dd, 0, 0, 0);
-          const finJour = new Date(yd, md - 1, dd, 23, 59, 59);
-          return finJour >= todayLocal;
+          // Sans date_fin : disparaît le lendemain de date_debut
+          const debut = new Date(evt.date_debut + 'T23:59:59');
+          return debut >= today;
         }
         return true; // Pas de date → on garde
       });
@@ -2559,7 +2554,10 @@ function searchEventPlace(val) {
   box.style.display = 'block';
   eventSearchDebounce = setTimeout(() => {
     if (!window.google) return;
-    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    const dummyEv = document.createElement('div');
+    dummyEv.style.display = 'none';
+    document.body.appendChild(dummyEv);
+    const svc = new google.maps.places.PlacesService(dummyEv);
     svc.textSearch({ query: val + ' Bordeaux', location: new google.maps.LatLng(44.8378, -0.5792), radius: 15000 },
       (results, status) => {
         if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
@@ -2677,6 +2675,8 @@ function searchPlacesAutocomplete(val) {
       return;
     }
     const dummy = document.createElement('div');
+    dummy.style.display = 'none';
+    document.body.appendChild(dummy);
     const svc = new google.maps.places.PlacesService(dummy);
     svc.textSearch({
       query: val + ' Bordeaux',
